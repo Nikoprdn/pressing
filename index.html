@@ -11,23 +11,22 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     :root {
-      --ink:      #1a237e;
-      --sky:      #3949ab;
-      --mist:     #e8eaf6;
-      --collect:  #ff8f00;
-      --deliver:  #1565c0;
-      --done:     #2e7d32;
-      --radius:   14px;
-      --shadow:   0 2px 12px rgba(26,35,126,.10);
+      --ink:     #1a237e;
+      --sky:     #3949ab;
+      --mist:    #e8eaf6;
+      --collect: #ff8f00;
+      --deliver: #1565c0;
+      --done:    #2e7d32;
+      --waze:    #33ccff;
+      --radius:  14px;
+      --shadow:  0 2px 12px rgba(26,35,126,.10);
     }
-
     * { box-sizing: border-box; }
-
     body {
       background: #f0f2f9;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       min-height: 100dvh;
-      padding-bottom: 90px; /* safe area for FAB */
+      padding-bottom: 90px;
     }
 
     /* ── TOP BAR ── */
@@ -51,28 +50,106 @@
       align-items: center;
       gap: 10px;
     }
-    .topbar h1 span.icon-wrap {
+    .topbar h1 .icon-wrap {
       background: rgba(255,255,255,.18);
       border-radius: 10px;
       width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.1rem;
     }
-    .topbar-meta {
-      font-size: .72rem;
-      opacity: .75;
-      text-align: right;
-      line-height: 1.4;
+    .topbar-meta { font-size: .72rem; opacity: .75; text-align: right; line-height: 1.4; }
+
+    /* ── PLANNING DU JOUR ── */
+    .planning-section {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 12px 14px;
     }
+    .planning-title {
+      font-size: .72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: #999;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .planning-title i { color: var(--ink); }
+    .planning-empty {
+      font-size: .82rem;
+      color: #bbb;
+      padding: 6px 0;
+      text-align: center;
+    }
+    .planning-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .planning-scroll::-webkit-scrollbar { display: none; }
+    .planning-item {
+      flex-shrink: 0;
+      border-radius: 12px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: opacity .15s;
+      min-width: 0;
+      max-width: 200px;
+    }
+    .planning-item:active { opacity: .75; }
+    .planning-item.pi-collecte  { background: #fff3e0; border: 1.5px solid #ffcc80; }
+    .planning-item.pi-livraison { background: #e3f2fd; border: 1.5px solid #90caf9; }
+    .planning-item .pi-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .planning-item.pi-collecte  .pi-icon { color: var(--collect); }
+    .planning-item.pi-livraison .pi-icon { color: var(--deliver); }
+    .planning-item .pi-info { min-width: 0; }
+    .planning-item .pi-name {
+      font-size: .82rem;
+      font-weight: 800;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .planning-item .pi-label {
+      font-size: .68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .planning-item.pi-collecte  .pi-label { color: var(--collect); }
+    .planning-item.pi-livraison .pi-label { color: var(--deliver); }
+    .planning-item .pi-waze {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--waze);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem;
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .planning-item .pi-waze i { font-size: .8rem; }
 
     /* ── FILTER TABS ── */
     .filter-tabs {
       display: flex;
       gap: 8px;
-      padding: 12px 16px;
+      padding: 10px 14px;
       overflow-x: auto;
       scrollbar-width: none;
-      background: #fff;
+      background: #f8f9ff;
       border-bottom: 1px solid #e0e0e0;
       position: sticky;
       top: 70px;
@@ -92,10 +169,7 @@
       transition: all .18s;
       white-space: nowrap;
     }
-    .filter-tab.active, .filter-tab:active {
-      background: var(--ink);
-      color: #fff;
-    }
+    .filter-tab.active { background: var(--ink); color: #fff; }
     .filter-tab .badge {
       background: rgba(255,255,255,.3);
       color: inherit;
@@ -104,10 +178,27 @@
       border-radius: 10px;
       margin-left: 4px;
     }
-    .filter-tab:not(.active) .badge {
-      background: var(--sky);
-      color: #fff;
+    .filter-tab:not(.active) .badge { background: var(--sky); color: #fff; }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 14px;
     }
+    .stat-pill {
+      flex: 1;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-pill .num  { font-size: 1.4rem; font-weight: 900; color: var(--ink); line-height: 1; }
+    .stat-pill .lbl  { font-size: .63rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+    .stat-pill.c .num { color: var(--collect); }
+    .stat-pill.l .num { color: var(--deliver); }
+    .stat-pill.d .num { color: var(--done); }
 
     /* ── CARD LIST ── */
     #card-list {
@@ -116,20 +207,17 @@
       flex-direction: column;
       gap: 12px;
     }
-
     .client-card {
       background: #fff;
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
-      transition: transform .15s, box-shadow .15s;
       border-left: 5px solid transparent;
       animation: fadeSlide .25s ease both;
     }
     .client-card.status-collecte  { border-left-color: var(--collect); }
     .client-card.status-livraison { border-left-color: var(--deliver); }
     .client-card.status-termine   { border-left-color: var(--done); opacity: .78; }
-
     @keyframes fadeSlide {
       from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -139,23 +227,13 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      padding: 14px 14px 8px;
+      padding: 12px 14px 6px;
       gap: 8px;
     }
-    .card-name {
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: var(--ink);
-      line-height: 1.2;
-    }
-    .card-bags {
-      font-size: .78rem;
-      color: #777;
-      margin-top: 2px;
-    }
+    .card-name  { font-size: 1.05rem; font-weight: 800; color: var(--ink); line-height: 1.2; }
+    .card-bags  { font-size: .78rem; color: #777; margin-top: 2px; }
     .card-bags i { color: var(--sky); margin-right: 3px; }
 
-    /* Status badge */
     .status-badge {
       flex-shrink: 0;
       font-size: .7rem;
@@ -169,7 +247,41 @@
     .badge-livraison { background: #e3f2fd; color: var(--deliver); }
     .badge-termine   { background: #e8f5e9; color: var(--done); }
 
-    /* Dates row */
+    /* Address row */
+    .card-address {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px 6px;
+    }
+    .address-text {
+      font-size: .78rem;
+      color: #555;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .address-text i { color: #aaa; margin-right: 4px; }
+    .waze-btn {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--waze);
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 900;
+      padding: 5px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: opacity .15s;
+      white-space: nowrap;
+    }
+    .waze-btn:active { opacity: .8; color: #fff; }
+    .waze-btn i { font-size: .78rem; }
+
+    /* Dates */
     .card-dates {
       display: flex;
       gap: 6px;
@@ -189,8 +301,11 @@
     .date-chip i { font-size: .78rem; }
     .date-chip.collect-date i { color: var(--collect); }
     .date-chip.deliver-date i { color: var(--deliver); }
+    .date-chip.overdue { background: #fff3e0; }
+    .date-chip.overdue i { color: #e65100; }
+    .date-chip.overdue span { color: #bf360c; font-weight: 700; }
 
-    /* Action row */
+    /* Actions */
     .card-actions {
       border-top: 1px solid #f0f0f0;
       display: flex;
@@ -200,7 +315,7 @@
     }
     .status-btn {
       flex: 1;
-      font-size: .75rem;
+      font-size: .72rem;
       font-weight: 700;
       border: 2px solid;
       border-radius: 10px;
@@ -231,7 +346,7 @@
     .btn-delete { background: #fef2f2; color: #c62828; }
     .btn-edit:active, .btn-delete:active { transform: scale(.92); }
 
-    /* ── EMPTY STATE ── */
+    /* ── EMPTY ── */
     #empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -243,8 +358,7 @@
     /* ── FAB ── */
     .fab {
       position: fixed;
-      bottom: 24px;
-      right: 20px;
+      bottom: 24px; right: 20px;
       width: 58px; height: 58px;
       border-radius: 18px;
       background: linear-gradient(135deg, var(--ink), var(--sky));
@@ -257,15 +371,14 @@
       z-index: 100;
       transition: transform .15s, box-shadow .15s;
     }
-    .fab:active { transform: scale(.92); box-shadow: 0 2px 8px rgba(26,35,126,.3); }
+    .fab:active { transform: scale(.92); }
 
     /* ── MODAL ── */
     .modal-card {
       border-radius: 20px 20px 0 0;
       margin: 0;
       position: fixed;
-      bottom: 0;
-      left: 0; right: 0;
+      bottom: 0; left: 0; right: 0;
       max-height: 92dvh;
       overflow-y: auto;
       animation: slideUp .25s ease;
@@ -282,7 +395,7 @@
     }
     .modal-card-title { color: #fff !important; font-weight: 800; font-size: 1.05rem; }
     .modal-card-body  { padding: 20px; }
-    .modal-card-foot  { padding: 14px 20px; border-top: 1px solid #eee; gap: 10px; }
+    .modal-card-foot  { padding: 14px 20px; border-top: 1px solid #eee; flex-direction: column; gap: 8px; }
 
     .field label.label { font-weight: 700; font-size: .82rem; color: #555; margin-bottom: 4px; }
     .input, .select select {
@@ -301,77 +414,34 @@
 
     .btn-save {
       background: linear-gradient(135deg, var(--ink), var(--sky));
-      color: #fff;
-      border: none;
+      color: #fff; border: none;
       border-radius: 12px;
-      font-weight: 800;
-      font-size: .95rem;
+      font-weight: 800; font-size: .95rem;
       padding: 12px 28px;
-      cursor: pointer;
-      transition: opacity .15s;
-      width: 100%;
+      cursor: pointer; transition: opacity .15s; width: 100%;
     }
     .btn-save:active { opacity: .85; }
     .btn-cancel {
-      background: #f3f4f6;
-      color: #666;
-      border: none;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: .9rem;
-      padding: 12px 20px;
-      cursor: pointer;
-      width: 100%;
+      background: #f3f4f6; color: #666; border: none;
+      border-radius: 12px; font-weight: 700; font-size: .9rem;
+      padding: 12px 20px; cursor: pointer; width: 100%;
     }
-
-    /* ── STATS BAR ── */
-    .stats-bar {
-      display: flex;
-      gap: 8px;
-      padding: 12px 14px;
-    }
-    .stat-pill {
-      flex: 1;
-      background: #fff;
-      border-radius: 12px;
-      padding: 10px 8px;
-      text-align: center;
-      box-shadow: var(--shadow);
-    }
-    .stat-pill .num  { font-size: 1.4rem; font-weight: 900; color: var(--ink); line-height: 1; }
-    .stat-pill .lbl  { font-size: .63rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
-    .stat-pill.c .num { color: var(--collect); }
-    .stat-pill.l .num { color: var(--deliver); }
-    .stat-pill.d .num { color: var(--done); }
 
     /* ── TOAST ── */
     .toast {
       position: fixed;
-      bottom: 100px;
-      left: 50%;
+      bottom: 100px; left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: #1a237e;
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 12px;
-      font-size: .85rem;
-      font-weight: 700;
-      opacity: 0;
-      transition: all .3s;
-      z-index: 200;
-      white-space: nowrap;
-      pointer-events: none;
+      background: #1a237e; color: #fff;
+      padding: 10px 22px; border-radius: 12px;
+      font-size: .85rem; font-weight: 700;
+      opacity: 0; transition: all .3s;
+      z-index: 200; white-space: nowrap; pointer-events: none;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* date overdue highlight */
-    .date-chip.overdue { background: #fff3e0; }
-    .date-chip.overdue i { color: #e65100; }
-    .date-chip.overdue span { color: #bf360c; font-weight: 700; }
-
     @media (min-width: 480px) {
-      #card-list { max-width: 480px; margin: 0 auto; }
-      .stats-bar { max-width: 480px; margin: 0 auto; }
+      #card-list, .stats-bar, .planning-section { max-width: 480px; margin-left: auto; margin-right: auto; }
       .filter-tabs { justify-content: center; }
     }
   </style>
@@ -390,40 +460,26 @@
   </div>
 </div>
 
+<!-- PLANNING DU JOUR -->
+<div class="planning-section">
+  <div class="planning-title"><i class="fas fa-calendar-day"></i> Planning du jour</div>
+  <div id="planning-content"></div>
+</div>
+
 <!-- FILTER TABS -->
 <div class="filter-tabs" id="filter-tabs">
-  <button class="filter-tab active" data-filter="all">
-    Tous <span class="badge" id="b-all">0</span>
-  </button>
-  <button class="filter-tab" data-filter="collecte">
-    <i class="fas fa-box-open"></i> Collecte <span class="badge" id="b-collecte">0</span>
-  </button>
-  <button class="filter-tab" data-filter="livraison">
-    <i class="fas fa-truck"></i> Livraison <span class="badge" id="b-livraison">0</span>
-  </button>
-  <button class="filter-tab" data-filter="termine">
-    <i class="fas fa-check-circle"></i> Terminé <span class="badge" id="b-termine">0</span>
-  </button>
+  <button class="filter-tab active" data-filter="all">Tous <span class="badge" id="b-all">0</span></button>
+  <button class="filter-tab" data-filter="collecte">📦 Collecte <span class="badge" id="b-collecte">0</span></button>
+  <button class="filter-tab" data-filter="livraison">🚚 Livraison <span class="badge" id="b-livraison">0</span></button>
+  <button class="filter-tab" data-filter="termine">✅ Terminé <span class="badge" id="b-termine">0</span></button>
 </div>
 
 <!-- STATS -->
 <div class="stats-bar">
-  <div class="stat-pill c">
-    <div class="num" id="s-collecte">0</div>
-    <div class="lbl">Collectes</div>
-  </div>
-  <div class="stat-pill l">
-    <div class="num" id="s-livraison">0</div>
-    <div class="lbl">Livraisons</div>
-  </div>
-  <div class="stat-pill d">
-    <div class="num" id="s-termine">0</div>
-    <div class="lbl">Terminés</div>
-  </div>
-  <div class="stat-pill">
-    <div class="num" id="s-bags">0</div>
-    <div class="lbl">Sacs / route</div>
-  </div>
+  <div class="stat-pill c"><div class="num" id="s-collecte">0</div><div class="lbl">Collectes</div></div>
+  <div class="stat-pill l"><div class="num" id="s-livraison">0</div><div class="lbl">Livraisons</div></div>
+  <div class="stat-pill d"><div class="num" id="s-termine">0</div><div class="lbl">Terminés</div></div>
+  <div class="stat-pill"><div class="num" id="s-bags">0</div><div class="lbl">Sacs / route</div></div>
 </div>
 
 <!-- CARD LIST -->
@@ -434,9 +490,7 @@
 </div>
 
 <!-- FAB -->
-<button class="fab" id="fab-btn" aria-label="Ajouter un client">
-  <i class="fas fa-plus"></i>
-</button>
+<button class="fab" id="fab-btn" aria-label="Ajouter un client"><i class="fas fa-plus"></i></button>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -460,6 +514,14 @@
       </div>
 
       <div class="field">
+        <label class="label">Adresse</label>
+        <div class="control has-icons-left">
+          <input class="input" type="text" id="f-address" placeholder="Ex. 12 quai de la Criée, Toulon" autocomplete="street-address" />
+          <span class="icon is-left"><i class="fas fa-map-marker-alt"></i></span>
+        </div>
+      </div>
+
+      <div class="field">
         <label class="label">Nombre de sacs</label>
         <div class="control has-icons-left">
           <input class="input" type="number" id="f-bags" placeholder="0" min="0" />
@@ -470,7 +532,7 @@
       <div class="columns is-mobile">
         <div class="column">
           <div class="field">
-            <label class="label">Date de collecte</label>
+            <label class="label">Date collecte</label>
             <div class="control">
               <input class="input" type="date" id="f-collect" />
             </div>
@@ -478,7 +540,7 @@
         </div>
         <div class="column">
           <div class="field">
-            <label class="label">Date de livraison</label>
+            <label class="label">Date livraison</label>
             <div class="control">
               <input class="input" type="date" id="f-deliver" />
             </div>
@@ -499,7 +561,7 @@
         </div>
       </div>
     </section>
-    <footer class="modal-card-foot" style="flex-direction:column">
+    <footer class="modal-card-foot">
       <button class="btn-save" id="save-btn"><i class="fas fa-check"></i> Enregistrer</button>
       <button class="btn-cancel" id="cancel-btn">Annuler</button>
     </footer>
@@ -508,62 +570,109 @@
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────
-const KEY = 'pressingrun_v1';
+const KEY = 'pressingrun_v2';
 let clients = JSON.parse(localStorage.getItem(KEY) || '[]');
 let activeFilter = 'all';
 
-function save() {
-  localStorage.setItem(KEY, JSON.stringify(clients));
-}
+function save() { localStorage.setItem(KEY, JSON.stringify(clients)); }
+function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-}
+function todayISO() { return new Date().toISOString().split('T')[0]; }
 
-// ── FORMAT DATE ───────────────────────────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return '—';
-  const [y, m, d] = iso.split('-');
+  const [y,m,d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
-
 function isOverdue(iso, status) {
   if (!iso || status === 'termine') return false;
-  return new Date(iso) < new Date(new Date().toDateString());
+  return iso < todayISO();
+}
+
+// ── WAZE URL ──────────────────────────────────────────────────────────
+function wazeUrl(address) {
+  if (!address) return null;
+  const q = encodeURIComponent(address);
+  return `https://waze.com/ul?q=${q}&navigate=yes`;
+}
+
+// ── PLANNING DU JOUR ──────────────────────────────────────────────────
+function renderPlanning() {
+  const today = todayISO();
+  const container = document.getElementById('planning-content');
+
+  // Collect: collectDate === today AND not done
+  // Deliver: deliverDate === today AND not done
+  const items = [];
+  clients.forEach(c => {
+    if (c.status === 'termine') return;
+    if (c.collectDate === today) {
+      items.push({ client: c, type: 'collecte' });
+    } else if (c.deliverDate === today) {
+      items.push({ client: c, type: 'livraison' });
+    }
+  });
+
+  if (items.length === 0) {
+    container.innerHTML = '<div class="planning-empty">Rien de prévu aujourd\'hui 🎉</div>';
+    return;
+  }
+
+  const scroll = document.createElement('div');
+  scroll.className = 'planning-scroll';
+
+  items.forEach(({ client: c, type }) => {
+    const waze = c.address ? wazeUrl(c.address) : null;
+    const label = type === 'collecte' ? 'À collecter' : 'À livrer';
+    const icon  = type === 'collecte' ? 'fa-box-open' : 'fa-truck';
+
+    const item = document.createElement('div');
+    item.className = `planning-item pi-${type}`;
+    item.dataset.id = c.id;
+    item.innerHTML = `
+      <i class="fas ${icon} pi-icon"></i>
+      <div class="pi-info">
+        <div class="pi-name">${escHtml(c.name)}</div>
+        <div class="pi-label">${label}</div>
+      </div>
+      ${waze ? `<a class="pi-waze" href="${escHtml(waze)}" target="_blank" title="Ouvrir dans Waze"><i class="fas fa-location-arrow"></i></a>` : ''}
+    `;
+    scroll.appendChild(item);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(scroll);
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────
 function render() {
-  const list = document.getElementById('card-list');
+  const list  = document.getElementById('card-list');
   const empty = document.getElementById('empty-state');
 
   const counts = { collecte: 0, livraison: 0, termine: 0 };
   let totalBags = 0, activeBags = 0;
-
   clients.forEach(c => {
     counts[c.status]++;
-    totalBags += (c.bags || 0);
+    totalBags  += (c.bags || 0);
     if (c.status !== 'termine') activeBags += (c.bags || 0);
   });
 
-  // badges
-  document.getElementById('b-all').textContent = clients.length;
-  document.getElementById('b-collecte').textContent = counts.collecte;
+  document.getElementById('b-all').textContent      = clients.length;
+  document.getElementById('b-collecte').textContent  = counts.collecte;
   document.getElementById('b-livraison').textContent = counts.livraison;
-  document.getElementById('b-termine').textContent = counts.termine;
+  document.getElementById('b-termine').textContent   = counts.termine;
 
-  // stats
-  document.getElementById('s-collecte').textContent = counts.collecte;
+  document.getElementById('s-collecte').textContent  = counts.collecte;
   document.getElementById('s-livraison').textContent = counts.livraison;
-  document.getElementById('s-termine').textContent = counts.termine;
-  document.getElementById('s-bags').textContent = activeBags;
-  document.getElementById('total-bags').textContent = totalBags + ' sacs total';
+  document.getElementById('s-termine').textContent     = counts.termine;
+  document.getElementById('s-bags').textContent      = activeBags;
+  document.getElementById('total-bags').textContent  = totalBags + ' sacs total';
 
-  // today
   document.getElementById('today-date').textContent =
     new Date().toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
 
-  // filter
+  renderPlanning();
+
   const filtered = activeFilter === 'all'
     ? clients
     : clients.filter(c => c.status === activeFilter);
@@ -573,51 +682,53 @@ function render() {
     empty.style.display = 'block';
   } else {
     empty.style.display = 'none';
-    filtered.forEach(c => {
-      list.appendChild(buildCard(c));
-    });
+    filtered.forEach(c => list.appendChild(buildCard(c)));
   }
 }
 
+// ── BUILD CARD ────────────────────────────────────────────────────────
 function buildCard(c) {
   const div = document.createElement('div');
   div.className = `client-card status-${c.status}`;
   div.dataset.id = c.id;
 
-  const collectOverdue = isOverdue(c.collectDate, c.status);
-  const deliverOverdue = isOverdue(c.deliverDate, c.status);
+  const coOver = isOverdue(c.collectDate, c.status);
+  const deOver = isOverdue(c.deliverDate, c.status);
+  const statusLabel = { collecte:'Collecte', livraison:'Livraison', termine:'Terminé' }[c.status];
+  const waze = c.address ? wazeUrl(c.address) : null;
 
-  const statusLabel = { collecte: 'Collecte', livraison: 'Livraison', termine: 'Terminé' }[c.status];
-  const badgeClass = `badge-${c.status}`;
+  const addressRow = c.address ? `
+    <div class="card-address">
+      <div class="address-text"><i class="fas fa-map-marker-alt"></i>${escHtml(c.address)}</div>
+      ${waze ? `<a class="waze-btn" href="${escHtml(waze)}" target="_blank"><i class="fas fa-location-arrow"></i> Waze</a>` : ''}
+    </div>` : '';
 
   div.innerHTML = `
     <div class="card-header">
       <div>
         <div class="card-name">${escHtml(c.name)}</div>
-        <div class="card-bags"><i class="fas fa-shopping-bag"></i>${c.bags || 0} sac${c.bags > 1 ? 's' : ''}</div>
+        <div class="card-bags"><i class="fas fa-shopping-bag"></i>${c.bags || 0} sac${(c.bags||0) > 1 ? 's' : ''}</div>
       </div>
-      <span class="status-badge ${badgeClass}">${statusLabel}</span>
+      <span class="status-badge badge-${c.status}">${statusLabel}</span>
     </div>
+    ${addressRow}
     <div class="card-dates">
-      <div class="date-chip collect-date ${collectOverdue ? 'overdue' : ''}">
+      <div class="date-chip collect-date ${coOver?'overdue':''}">
         <i class="fas fa-calendar-alt"></i>
         <span>Collecte&nbsp;: ${fmtDate(c.collectDate)}</span>
       </div>
-      <div class="date-chip deliver-date ${deliverOverdue ? 'overdue' : ''}">
+      <div class="date-chip deliver-date ${deOver?'overdue':''}">
         <i class="fas fa-calendar-check"></i>
         <span>Livraison&nbsp;: ${fmtDate(c.deliverDate)}</span>
       </div>
     </div>
     <div class="card-actions">
-      <button class="status-btn btn-collecte ${c.status==='collecte'?'active-collecte':''}"
-        data-action="status" data-val="collecte">📦 Collecte</button>
-      <button class="status-btn btn-livraison ${c.status==='livraison'?'active-livraison':''}"
-        data-action="status" data-val="livraison">🚚 Livraison</button>
-      <button class="status-btn btn-termine ${c.status==='termine'?'active-termine':''}"
-        data-action="status" data-val="termine">✅ Terminé</button>
+      <button class="status-btn btn-collecte ${c.status==='collecte'?'active-collecte':''}" data-action="status" data-val="collecte">📦 Collecte</button>
+      <button class="status-btn btn-livraison ${c.status==='livraison'?'active-livraison':''}" data-action="status" data-val="livraison">🚚 Livraison</button>
+      <button class="status-btn btn-termine ${c.status==='termine'?'active-termine':''}" data-action="status" data-val="termine">✅ Terminé</button>
       <div class="icon-actions">
-        <button class="icon-btn btn-edit" data-action="edit" title="Modifier"><i class="fas fa-pen"></i></button>
-        <button class="icon-btn btn-delete" data-action="delete" title="Supprimer"><i class="fas fa-trash"></i></button>
+        <button class="icon-btn btn-edit" data-action="edit"><i class="fas fa-pen"></i></button>
+        <button class="icon-btn btn-delete" data-action="delete"><i class="fas fa-trash"></i></button>
       </div>
     </div>
   `;
@@ -628,35 +739,29 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── EVENTS – card actions ─────────────────────────────────────────────
+// ── CARD EVENTS ───────────────────────────────────────────────────────
 document.getElementById('card-list').addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
-  const cardEl = btn.closest('.client-card');
-  const id = cardEl?.dataset.id;
-  const c = clients.find(x => x.id === id);
+  const id = btn.closest('.client-card')?.dataset.id;
+  const c  = clients.find(x => x.id === id);
   if (!c) return;
-
-  const action = btn.dataset.action;
-
-  if (action === 'status') {
+  if (btn.dataset.action === 'status') {
     c.status = btn.dataset.val;
-    save();
-    render();
-    toast(`Statut → ${btn.dataset.val}`);
-  } else if (action === 'edit') {
+    save(); render();
+    toast('Statut → ' + btn.dataset.val);
+  } else if (btn.dataset.action === 'edit') {
     openModal(c);
-  } else if (action === 'delete') {
-    if (confirm(`Supprimer ${c.name} ?`)) {
+  } else if (btn.dataset.action === 'delete') {
+    if (confirm('Supprimer ' + c.name + ' ?')) {
       clients = clients.filter(x => x.id !== id);
-      save();
-      render();
+      save(); render();
       toast('Client supprimé');
     }
   }
 });
 
-// ── EVENTS – filter tabs ──────────────────────────────────────────────
+// ── FILTER EVENTS ─────────────────────────────────────────────────────
 document.getElementById('filter-tabs').addEventListener('click', e => {
   const tab = e.target.closest('.filter-tab');
   if (!tab) return;
@@ -668,9 +773,10 @@ document.getElementById('filter-tabs').addEventListener('click', e => {
 
 // ── MODAL ─────────────────────────────────────────────────────────────
 function openModal(c = null) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayISO();
   document.getElementById('edit-id').value    = c ? c.id : '';
   document.getElementById('f-name').value     = c ? c.name : '';
+  document.getElementById('f-address').value  = c ? (c.address || '') : '';
   document.getElementById('f-bags').value     = c ? (c.bags || '') : '';
   document.getElementById('f-collect').value  = c ? (c.collectDate || today) : today;
   document.getElementById('f-deliver').value  = c ? (c.deliverDate || '') : '';
@@ -679,10 +785,7 @@ function openModal(c = null) {
   document.getElementById('modal').classList.add('is-active');
   setTimeout(() => document.getElementById('f-name').focus(), 200);
 }
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('is-active');
-}
+function closeModal() { document.getElementById('modal').classList.remove('is-active'); }
 
 document.getElementById('fab-btn').addEventListener('click', () => openModal());
 document.getElementById('cancel-btn').addEventListener('click', closeModal);
@@ -696,16 +799,15 @@ document.getElementById('save-btn').addEventListener('click', () => {
     return;
   }
   document.getElementById('f-name').style.borderColor = '';
-
-  const id = document.getElementById('edit-id').value;
+  const id   = document.getElementById('edit-id').value;
   const data = {
     name,
+    address:     document.getElementById('f-address').value.trim(),
     bags:        parseInt(document.getElementById('f-bags').value) || 0,
     collectDate: document.getElementById('f-collect').value,
     deliverDate: document.getElementById('f-deliver').value,
     status:      document.getElementById('f-status').value,
   };
-
   if (id) {
     const idx = clients.findIndex(c => c.id === id);
     clients[idx] = { ...clients[idx], ...data };
@@ -714,10 +816,7 @@ document.getElementById('save-btn').addEventListener('click', () => {
     clients.push({ id: uid(), ...data });
     toast('Client ajouté ✔');
   }
-
-  save();
-  render();
-  closeModal();
+  save(); render(); closeModal();
 });
 
 // ── TOAST ─────────────────────────────────────────────────────────────
@@ -728,7 +827,17 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2000);
 }
 
+
 // ── INIT ──────────────────────────────────────────────────────────────
+// Migrate old data if needed (v1 → v2: add address field)
+const oldData = localStorage.getItem('pressingrun_v1');
+if (oldData && clients.length === 0) {
+  try {
+    clients = JSON.parse(oldData).map(c => ({ ...c, address: c.address || '' }));
+    save();
+  } catch(e) {}
+}
+
 render();
 </script>
 </body>

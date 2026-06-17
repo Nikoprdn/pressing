@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a237e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>PressingRun — Mes Tournées</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --ink:      #1a237e;
+      --sky:      #3949ab;
+      --mist:     #e8eaf6;
+      --collect:  #ff8f00;
+      --deliver:  #1565c0;
+      --done:     #2e7d32;
+      --radius:   14px;
+      --shadow:   0 2px 12px rgba(26,35,126,.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: #f0f2f9;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100dvh;
+      padding-bottom: 90px; /* safe area for FAB */
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      background: linear-gradient(135deg, var(--ink) 0%, var(--sky) 100%);
+      color: #fff;
+      padding: 18px 20px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(26,35,126,.3);
+    }
+    .topbar h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar h1 span.icon-wrap {
+      background: rgba(255,255,255,.18);
+      border-radius: 10px;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+    .topbar-meta {
+      font-size: .72rem;
+      opacity: .75;
+      text-align: right;
+      line-height: 1.4;
+    }
+
+    /* ── FILTER TABS ── */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 70px;
+      z-index: 40;
+    }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+    .filter-tab {
+      flex-shrink: 0;
+      border: 2px solid transparent;
+      background: var(--mist);
+      color: var(--sky);
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .18s;
+      white-space: nowrap;
+    }
+    .filter-tab.active, .filter-tab:active {
+      background: var(--ink);
+      color: #fff;
+    }
+    .filter-tab .badge {
+      background: rgba(255,255,255,.3);
+      color: inherit;
+      font-size: .68rem;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+    .filter-tab:not(.active) .badge {
+      background: var(--sky);
+      color: #fff;
+    }
+
+    /* ── CARD LIST ── */
+    #card-list {
+      padding: 14px 14px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .client-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: transform .15s, box-shadow .15s;
+      border-left: 5px solid transparent;
+      animation: fadeSlide .25s ease both;
+    }
+    .client-card.status-collecte  { border-left-color: var(--collect); }
+    .client-card.status-livraison { border-left-color: var(--deliver); }
+    .client-card.status-termine   { border-left-color: var(--done); opacity: .78; }
+
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 14px 14px 8px;
+      gap: 8px;
+    }
+    .card-name {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .card-bags {
+      font-size: .78rem;
+      color: #777;
+      margin-top: 2px;
+    }
+    .card-bags i { color: var(--sky); margin-right: 3px; }
+
+    /* Status badge */
+    .status-badge {
+      flex-shrink: 0;
+      font-size: .7rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .badge-collecte  { background: #fff3e0; color: var(--collect); }
+    .badge-livraison { background: #e3f2fd; color: var(--deliver); }
+    .badge-termine   { background: #e8f5e9; color: var(--done); }
+
+    /* Dates row */
+    .card-dates {
+      display: flex;
+      gap: 6px;
+      padding: 0 14px 10px;
+      flex-wrap: wrap;
+    }
+    .date-chip {
+      font-size: .73rem;
+      background: var(--mist);
+      color: #555;
+      padding: 4px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .date-chip i { font-size: .78rem; }
+    .date-chip.collect-date i { color: var(--collect); }
+    .date-chip.deliver-date i { color: var(--deliver); }
+
+    /* Action row */
+    .card-actions {
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      gap: 6px;
+    }
+    .status-btn {
+      flex: 1;
+      font-size: .75rem;
+      font-weight: 700;
+      border: 2px solid;
+      border-radius: 10px;
+      padding: 7px 4px;
+      cursor: pointer;
+      transition: all .15s;
+      background: #fff;
+      text-align: center;
+    }
+    .status-btn.btn-collecte  { border-color: var(--collect); color: var(--collect); }
+    .status-btn.btn-livraison { border-color: var(--deliver); color: var(--deliver); }
+    .status-btn.btn-termine   { border-color: var(--done);    color: var(--done); }
+    .status-btn.active-collecte  { background: var(--collect); color: #fff; }
+    .status-btn.active-livraison { background: var(--deliver); color: #fff; }
+    .status-btn.active-termine   { background: var(--done);    color: #fff; }
+
+    .icon-actions { display: flex; gap: 4px; }
+    .icon-btn {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem;
+      transition: all .15s;
+    }
+    .btn-edit   { background: #f3f4f6; color: var(--sky); }
+    .btn-delete { background: #fef2f2; color: #c62828; }
+    .btn-edit:active, .btn-delete:active { transform: scale(.92); }
+
+    /* ── EMPTY STATE ── */
+    #empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+    }
+    #empty-state i { font-size: 3rem; margin-bottom: 16px; color: #c5cae9; }
+    #empty-state p { font-size: .95rem; }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      width: 58px; height: 58px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--ink), var(--sky));
+      color: #fff;
+      font-size: 1.4rem;
+      border: none;
+      box-shadow: 0 4px 18px rgba(26,35,126,.4);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .fab:active { transform: scale(.92); box-shadow: 0 2px 8px rgba(26,35,126,.3); }
+
+    /* ── MODAL ── */
+    .modal-card {
+      border-radius: 20px 20px 0 0;
+      margin: 0;
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      max-height: 92dvh;
+      overflow-y: auto;
+      animation: slideUp .25s ease;
+    }
+    .modal.is-active .modal-background { background: rgba(10,10,30,.5); }
+    @keyframes slideUp {
+      from { transform: translateY(60px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .modal-card-head {
+      border-radius: 20px 20px 0 0;
+      background: linear-gradient(135deg, var(--ink), var(--sky));
+      padding: 18px 20px;
+    }
+    .modal-card-title { color: #fff !important; font-weight: 800; font-size: 1.05rem; }
+    .modal-card-body  { padding: 20px; }
+    .modal-card-foot  { padding: 14px 20px; border-top: 1px solid #eee; gap: 10px; }
+
+    .field label.label { font-weight: 700; font-size: .82rem; color: #555; margin-bottom: 4px; }
+    .input, .select select {
+      border-radius: 10px;
+      border: 2px solid #e0e0e0;
+      font-size: .92rem;
+      padding: 10px 14px;
+      transition: border-color .15s;
+    }
+    .input:focus, .select select:focus {
+      border-color: var(--sky);
+      box-shadow: 0 0 0 3px rgba(57,73,171,.12);
+    }
+    .select { width: 100%; }
+    .select select { width: 100%; }
+
+    .btn-save {
+      background: linear-gradient(135deg, var(--ink), var(--sky));
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: .95rem;
+      padding: 12px 28px;
+      cursor: pointer;
+      transition: opacity .15s;
+      width: 100%;
+    }
+    .btn-save:active { opacity: .85; }
+    .btn-cancel {
+      background: #f3f4f6;
+      color: #666;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: .9rem;
+      padding: 12px 20px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 14px;
+    }
+    .stat-pill {
+      flex: 1;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-pill .num  { font-size: 1.4rem; font-weight: 900; color: var(--ink); line-height: 1; }
+    .stat-pill .lbl  { font-size: .63rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+    .stat-pill.c .num { color: var(--collect); }
+    .stat-pill.l .num { color: var(--deliver); }
+    .stat-pill.d .num { color: var(--done); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1a237e;
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-size: .85rem;
+      font-weight: 700;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 200;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* date overdue highlight */
+    .date-chip.overdue { background: #fff3e0; }
+    .date-chip.overdue i { color: #e65100; }
+    .date-chip.overdue span { color: #bf360c; font-weight: 700; }
+
+    @media (min-width: 480px) {
+      #card-list { max-width: 480px; margin: 0 auto; }
+      .stats-bar { max-width: 480px; margin: 0 auto; }
+      .filter-tabs { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <h1>
+    <span class="icon-wrap"><i class="fas fa-route"></i></span>
+    PressingRun
+  </h1>
+  <div class="topbar-meta">
+    <div id="today-date"></div>
+    <div id="total-bags"></div>
+  </div>
+</div>
+
+<!-- FILTER TABS -->
+<div class="filter-tabs" id="filter-tabs">
+  <button class="filter-tab active" data-filter="all">
+    Tous <span class="badge" id="b-all">0</span>
+  </button>
+  <button class="filter-tab" data-filter="collecte">
+    <i class="fas fa-box-open"></i> Collecte <span class="badge" id="b-collecte">0</span>
+  </button>
+  <button class="filter-tab" data-filter="livraison">
+    <i class="fas fa-truck"></i> Livraison <span class="badge" id="b-livraison">0</span>
+  </button>
+  <button class="filter-tab" data-filter="termine">
+    <i class="fas fa-check-circle"></i> Terminé <span class="badge" id="b-termine">0</span>
+  </button>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-pill c">
+    <div class="num" id="s-collecte">0</div>
+    <div class="lbl">Collectes</div>
+  </div>
+  <div class="stat-pill l">
+    <div class="num" id="s-livraison">0</div>
+    <div class="lbl">Livraisons</div>
+  </div>
+  <div class="stat-pill d">
+    <div class="num" id="s-termine">0</div>
+    <div class="lbl">Terminés</div>
+  </div>
+  <div class="stat-pill">
+    <div class="num" id="s-bags">0</div>
+    <div class="lbl">Sacs / route</div>
+  </div>
+</div>
+
+<!-- CARD LIST -->
+<div id="card-list"></div>
+<div id="empty-state" style="display:none">
+  <i class="fas fa-shirt"></i>
+  <p>Aucun client pour le moment.<br>Appuie sur <strong>+</strong> pour commencer ta tournée.</p>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" aria-label="Ajouter un client">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-background" id="modal-bg"></div>
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title" id="modal-title">Nouveau client</p>
+    </header>
+    <section class="modal-card-body">
+      <input type="hidden" id="edit-id" />
+
+      <div class="field">
+        <label class="label">Nom du client / bateau</label>
+        <div class="control has-icons-left">
+          <input class="input" type="text" id="f-name" placeholder="Ex. Le Mistrau, Mme Dupont…" autocomplete="off" />
+          <span class="icon is-left"><i class="fas fa-user"></i></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Nombre de sacs</label>
+        <div class="control has-icons-left">
+          <input class="input" type="number" id="f-bags" placeholder="0" min="0" />
+          <span class="icon is-left"><i class="fas fa-shopping-bag"></i></span>
+        </div>
+      </div>
+
+      <div class="columns is-mobile">
+        <div class="column">
+          <div class="field">
+            <label class="label">Date de collecte</label>
+            <div class="control">
+              <input class="input" type="date" id="f-collect" />
+            </div>
+          </div>
+        </div>
+        <div class="column">
+          <div class="field">
+            <label class="label">Date de livraison</label>
+            <div class="control">
+              <input class="input" type="date" id="f-deliver" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Statut</label>
+        <div class="control">
+          <div class="select is-fullwidth">
+            <select id="f-status">
+              <option value="collecte">📦 Collecte</option>
+              <option value="livraison">🚚 Livraison</option>
+              <option value="termine">✅ Terminé</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer class="modal-card-foot" style="flex-direction:column">
+      <button class="btn-save" id="save-btn"><i class="fas fa-check"></i> Enregistrer</button>
+      <button class="btn-cancel" id="cancel-btn">Annuler</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const KEY = 'pressingrun_v1';
+let clients = JSON.parse(localStorage.getItem(KEY) || '[]');
+let activeFilter = 'all';
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(clients));
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// ── FORMAT DATE ───────────────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function isOverdue(iso, status) {
+  if (!iso || status === 'termine') return false;
+  return new Date(iso) < new Date(new Date().toDateString());
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────
+function render() {
+  const list = document.getElementById('card-list');
+  const empty = document.getElementById('empty-state');
+
+  const counts = { collecte: 0, livraison: 0, termine: 0 };
+  let totalBags = 0, activeBags = 0;
+
+  clients.forEach(c => {
+    counts[c.status]++;
+    totalBags += (c.bags || 0);
+    if (c.status !== 'termine') activeBags += (c.bags || 0);
+  });
+
+  // badges
+  document.getElementById('b-all').textContent = clients.length;
+  document.getElementById('b-collecte').textContent = counts.collecte;
+  document.getElementById('b-livraison').textContent = counts.livraison;
+  document.getElementById('b-termine').textContent = counts.termine;
+
+  // stats
+  document.getElementById('s-collecte').textContent = counts.collecte;
+  document.getElementById('s-livraison').textContent = counts.livraison;
+  document.getElementById('s-termine').textContent = counts.termine;
+  document.getElementById('s-bags').textContent = activeBags;
+  document.getElementById('total-bags').textContent = totalBags + ' sacs total';
+
+  // today
+  document.getElementById('today-date').textContent =
+    new Date().toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+
+  // filter
+  const filtered = activeFilter === 'all'
+    ? clients
+    : clients.filter(c => c.status === activeFilter);
+
+  list.innerHTML = '';
+  if (filtered.length === 0) {
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    filtered.forEach(c => {
+      list.appendChild(buildCard(c));
+    });
+  }
+}
+
+function buildCard(c) {
+  const div = document.createElement('div');
+  div.className = `client-card status-${c.status}`;
+  div.dataset.id = c.id;
+
+  const collectOverdue = isOverdue(c.collectDate, c.status);
+  const deliverOverdue = isOverdue(c.deliverDate, c.status);
+
+  const statusLabel = { collecte: 'Collecte', livraison: 'Livraison', termine: 'Terminé' }[c.status];
+  const badgeClass = `badge-${c.status}`;
+
+  div.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-name">${escHtml(c.name)}</div>
+        <div class="card-bags"><i class="fas fa-shopping-bag"></i>${c.bags || 0} sac${c.bags > 1 ? 's' : ''}</div>
+      </div>
+      <span class="status-badge ${badgeClass}">${statusLabel}</span>
+    </div>
+    <div class="card-dates">
+      <div class="date-chip collect-date ${collectOverdue ? 'overdue' : ''}">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Collecte&nbsp;: ${fmtDate(c.collectDate)}</span>
+      </div>
+      <div class="date-chip deliver-date ${deliverOverdue ? 'overdue' : ''}">
+        <i class="fas fa-calendar-check"></i>
+        <span>Livraison&nbsp;: ${fmtDate(c.deliverDate)}</span>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button class="status-btn btn-collecte ${c.status==='collecte'?'active-collecte':''}"
+        data-action="status" data-val="collecte">📦 Collecte</button>
+      <button class="status-btn btn-livraison ${c.status==='livraison'?'active-livraison':''}"
+        data-action="status" data-val="livraison">🚚 Livraison</button>
+      <button class="status-btn btn-termine ${c.status==='termine'?'active-termine':''}"
+        data-action="status" data-val="termine">✅ Terminé</button>
+      <div class="icon-actions">
+        <button class="icon-btn btn-edit" data-action="edit" title="Modifier"><i class="fas fa-pen"></i></button>
+        <button class="icon-btn btn-delete" data-action="delete" title="Supprimer"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── EVENTS – card actions ─────────────────────────────────────────────
+document.getElementById('card-list').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const cardEl = btn.closest('.client-card');
+  const id = cardEl?.dataset.id;
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+
+  const action = btn.dataset.action;
+
+  if (action === 'status') {
+    c.status = btn.dataset.val;
+    save();
+    render();
+    toast(`Statut → ${btn.dataset.val}`);
+  } else if (action === 'edit') {
+    openModal(c);
+  } else if (action === 'delete') {
+    if (confirm(`Supprimer ${c.name} ?`)) {
+      clients = clients.filter(x => x.id !== id);
+      save();
+      render();
+      toast('Client supprimé');
+    }
+  }
+});
+
+// ── EVENTS – filter tabs ──────────────────────────────────────────────
+document.getElementById('filter-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.filter-tab');
+  if (!tab) return;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  activeFilter = tab.dataset.filter;
+  render();
+});
+
+// ── MODAL ─────────────────────────────────────────────────────────────
+function openModal(c = null) {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('edit-id').value    = c ? c.id : '';
+  document.getElementById('f-name').value     = c ? c.name : '';
+  document.getElementById('f-bags').value     = c ? (c.bags || '') : '';
+  document.getElementById('f-collect').value  = c ? (c.collectDate || today) : today;
+  document.getElementById('f-deliver').value  = c ? (c.deliverDate || '') : '';
+  document.getElementById('f-status').value   = c ? c.status : 'collecte';
+  document.getElementById('modal-title').textContent = c ? 'Modifier le client' : 'Nouveau client';
+  document.getElementById('modal').classList.add('is-active');
+  setTimeout(() => document.getElementById('f-name').focus(), 200);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('is-active');
+}
+
+document.getElementById('fab-btn').addEventListener('click', () => openModal());
+document.getElementById('cancel-btn').addEventListener('click', closeModal);
+document.getElementById('modal-bg').addEventListener('click', closeModal);
+
+document.getElementById('save-btn').addEventListener('click', () => {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) {
+    document.getElementById('f-name').focus();
+    document.getElementById('f-name').style.borderColor = '#e53935';
+    return;
+  }
+  document.getElementById('f-name').style.borderColor = '';
+
+  const id = document.getElementById('edit-id').value;
+  const data = {
+    name,
+    bags:        parseInt(document.getElementById('f-bags').value) || 0,
+    collectDate: document.getElementById('f-collect').value,
+    deliverDate: document.getElementById('f-deliver').value,
+    status:      document.getElementById('f-status').value,
+  };
+
+  if (id) {
+    const idx = clients.findIndex(c => c.id === id);
+    clients[idx] = { ...clients[idx], ...data };
+    toast('Client mis à jour ✔');
+  } else {
+    clients.push({ id: uid(), ...data });
+    toast('Client ajouté ✔');
+  }
+
+  save();
+  render();
+  closeModal();
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

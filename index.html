@@ -482,7 +482,7 @@ function render(){
 }
 
 // ── WEEK PLANNING ────────────────────────────────────────────
-var weekOffset = 0; // 0 = à partir d'aujourd'hui, +1 = semaine suivante, etc. (jamais négatif)
+var dayOffset = 0; // 0 = à partir d'aujourd'hui, +1 = à partir de demain, etc. (jamais négatif)
 var DAY_NAMES = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
 var MONTH_NAMES = ["janv.","f\u00e9vr.","mars","avr.","mai","juin","juil.","ao\u00fbt","sept.","oct.","nov.","d\u00e9c."];
 
@@ -491,13 +491,13 @@ function isoDate(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2
 function getRangeStart(offset){
   var d=new Date();
   d.setHours(0,0,0,0);
-  d.setDate(d.getDate()+offset*7);
+  d.setDate(d.getDate()+offset);
   return d;
 }
 
 function renderPlanning(){
   var todayStr=todayISO();
-  var rangeStart=getRangeStart(weekOffset);
+  var rangeStart=getRangeStart(dayOffset);
   var days=[];
   for(var i=0;i<7;i++){
     var d=new Date(rangeStart);
@@ -514,8 +514,8 @@ function renderPlanning(){
     label=first.getDate()+" "+MONTH_NAMES[first.getMonth()]+" - "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
   }
   document.getElementById("pnav-label").textContent=label;
-  document.getElementById("pnav-prev").disabled = weekOffset<=0;
-  document.getElementById("pnav-prev").style.opacity = weekOffset<=0?"0.35":"1";
+  document.getElementById("pnav-prev").disabled = dayOffset<=0;
+  document.getElementById("pnav-prev").style.opacity = dayOffset<=0?"0.35":"1";
 
   var el=document.getElementById("plan");
   var html="<div class='week-grid'>";
@@ -594,9 +594,9 @@ document.getElementById("cards").addEventListener("click",function(e){
   else if(btn.dataset.a==="del"){if(confirm("Supprimer "+c.name+" ?")){clients=clients.filter(function(x){return x.id!==id;});render();pushClients();toast("Supprimé");}}
 });
 
-document.getElementById("pnav-prev").addEventListener("click",function(){if(weekOffset>0){weekOffset--;renderPlanning();}});
-document.getElementById("pnav-next").addEventListener("click",function(){weekOffset++;renderPlanning();});
-document.getElementById("pnav-today").addEventListener("click",function(){weekOffset=0;renderPlanning();});
+document.getElementById("pnav-prev").addEventListener("click",function(){if(dayOffset>0){dayOffset--;renderPlanning();}});
+document.getElementById("pnav-next").addEventListener("click",function(){dayOffset++;renderPlanning();});
+document.getElementById("pnav-today").addEventListener("click",function(){dayOffset=0;renderPlanning();});
 
 document.getElementById("filters").addEventListener("click",function(e){
   var tab=e.target.closest(".ftab");if(!tab)return;

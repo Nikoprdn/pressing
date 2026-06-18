@@ -125,7 +125,7 @@
 </div>
 <div class="plan-section">
   <div class="plan-header">
-    <div class="plan-title">&#128197; Planning de la semaine</div>
+    <div class="plan-title">&#128197; Planning des jours \u00e0 venir</div>
     <div class="plan-nav">
       <button class="pnav-btn" id="pnav-prev">&#8249;</button>
       <span class="pnav-label" id="pnav-label"></span>
@@ -281,32 +281,30 @@ function render(){
 }
 
 // ── WEEK PLANNING ────────────────────────────────────────────
-var weekOffset = 0; // 0 = semaine courante, -1 = semaine précédente, +1 = suivante
+var weekOffset = 0; // 0 = à partir d'aujourd'hui, +1 = semaine suivante, etc. (jamais négatif)
 var DAY_NAMES = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
 var MONTH_NAMES = ["janv.","f\u00e9vr.","mars","avr.","mai","juin","juil.","ao\u00fbt","sept.","oct.","nov.","d\u00e9c."];
 
 function isoDate(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 
-function getWeekStart(offset){
+function getRangeStart(offset){
   var d=new Date();
   d.setHours(0,0,0,0);
-  var dow=d.getDay(); // 0=dim..6=sam
-  var diffToMonday=(dow===0?-6:1-dow);
-  d.setDate(d.getDate()+diffToMonday+offset*7);
+  d.setDate(d.getDate()+offset*7);
   return d;
 }
 
 function renderPlanning(){
   var todayStr=todayISO();
-  var weekStart=getWeekStart(weekOffset);
+  var rangeStart=getRangeStart(weekOffset);
   var days=[];
   for(var i=0;i<7;i++){
-    var d=new Date(weekStart);
-    d.setDate(weekStart.getDate()+i);
+    var d=new Date(rangeStart);
+    d.setDate(rangeStart.getDate()+i);
     days.push(d);
   }
 
-  // Label semaine (ex: "9 - 15 juin")
+  // Label période (ex: "18 - 24 juin" ou "Aujourd'hui - 7 jours")
   var first=days[0], last=days[6];
   var label;
   if(first.getMonth()===last.getMonth()){
@@ -315,6 +313,8 @@ function renderPlanning(){
     label=first.getDate()+" "+MONTH_NAMES[first.getMonth()]+" - "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
   }
   document.getElementById("pnav-label").textContent=label;
+  document.getElementById("pnav-prev").disabled = weekOffset<=0;
+  document.getElementById("pnav-prev").style.opacity = weekOffset<=0?"0.35":"1";
 
   var el=document.getElementById("plan");
   var html="<div class='week-grid'>";
@@ -393,7 +393,7 @@ document.getElementById("cards").addEventListener("click",function(e){
   else if(btn.dataset.a==="del"){if(confirm("Supprimer "+c.name+" ?")){clients=clients.filter(function(x){return x.id!==id;});render();pushClients();toast("Supprimé");}}
 });
 
-document.getElementById("pnav-prev").addEventListener("click",function(){weekOffset--;renderPlanning();});
+document.getElementById("pnav-prev").addEventListener("click",function(){if(weekOffset>0){weekOffset--;renderPlanning();}});
 document.getElementById("pnav-next").addEventListener("click",function(){weekOffset++;renderPlanning();});
 document.getElementById("pnav-today").addEventListener("click",function(){weekOffset=0;renderPlanning();});
 

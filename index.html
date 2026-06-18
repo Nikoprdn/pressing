@@ -150,6 +150,7 @@
     .hours-head{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between;}
     .hours-back{width:34px;height:34px;border-radius:10px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
     .hours-title{color:#fff;font-weight:800;font-size:16px;}
+    .hours-syncbar{background:#12254a;padding:5px 16px;font-size:11px;color:rgba(255,255,255,.7);text-align:center;}
     .hours-body{flex:1;overflow-y:auto;padding:16px 14px calc(24px + env(safe-area-inset-bottom));}
     .hours-add-card{background:#fff;border-radius:14px;padding:16px;box-shadow:var(--sh);margin-bottom:14px;}
     .hours-add-card .finp{margin-top:4px;}
@@ -236,6 +237,7 @@
     <div class="hours-title">Heures de travail</div>
     <div style="width:34px"></div>
   </div>
+  <div class="hours-syncbar"><span id="hours-sync-lbl">Connexion&#8230;</span></div>
   <div class="hours-body">
     <div class="hours-add-card">
       <label class="flbl">Date</label>
@@ -683,20 +685,62 @@ document.getElementById("lock-input").addEventListener("keydown",function(e){if(
 
 // ── COMPTEUR D'HEURES DE TRAVAIL ──────────────────────────────
 var workHours=[];
+var hoursPending=false;
+var hoursLoaded=false;
 
-function loadHours(){
+function loadHoursLocal(){
   try{
     var raw=localStorage.getItem(HOURS_KEY);
-    workHours=raw?JSON.parse(raw):[];
-    if(!Array.isArray(workHours))workHours=[];
-  }catch(e){workHours=[];}
+    var data=raw?JSON.parse(raw):[];
+    return Array.isArray(data)?data:[];
+  }catch(e){return [];}
 }
-function saveHours(){
+function saveHoursLocal(){
   try{localStorage.setItem(HOURS_KEY,JSON.stringify(workHours));}catch(e){}
 }
 
+// Charge depuis le Worker (source de vérité partagée), avec fallback local si hors-ligne
+function loadHours(cb){
+  document.getElementById("hours-sync-lbl").textContent="Chargement\u2026";
+  fetch(API+"/hours")
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+    .then(function(data){
+      workHours=Array.isArray(data)?data:[];
+      saveHoursLocal();
+      hoursLoaded=true;
+      document.getElementById("hours-sync-lbl").textContent="Synchronis\u00e9";
+      if(cb)cb();
+    })
+    .catch(function(){
+      workHours=loadHoursLocal();
+      document.getElementById("hours-sync-lbl").textContent="Hors ligne \u2014 donn\u00e9es locales";
+      if(cb)cb();
+    });
+}
+
+// Sauvegarde vers le Worker (partagé entre tous les appareils) + cache local
+function saveHours(){
+  saveHoursLocal();
+  if(hoursPending)return;
+  hoursPending=true;
+  document.getElementById("hours-sync-lbl").textContent="Sauvegarde\u2026";
+  fetch(API+"/hours",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(workHours)
+  })
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(function(){
+    hoursPending=false;
+    document.getElementById("hours-sync-lbl").textContent="Synchronis\u00e9";
+  })
+  .catch(function(){
+    hoursPending=false;
+    document.getElementById("hours-sync-lbl").textContent="Erreur de sync \u2014 sauvegard\u00e9 localement";
+  });
+}
+
 function openHoursScreen(){
-  loadHours();
   document.getElementById("h-date").value=todayISO();
   document.getElementById("h-start").value="";
   document.getElementById("h-end").value="";
@@ -704,7 +748,10 @@ function openHoursScreen(){
   document.getElementById("h-note").value="";
   updateHoursPreview();
   document.getElementById("hours-screen").classList.add("open");
+  // Affiche immédiatement le cache local, puis rafraîchit depuis le serveur
+  workHours=loadHoursLocal();
   renderHours();
+  loadHours(function(){renderHours();});
 }
 document.getElementById("hours-back").addEventListener("click",function(){
   document.getElementById("hours-screen").classList.remove("open");

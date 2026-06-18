@@ -186,6 +186,10 @@
 // ╚══════════════════════════════════════════════════════════╝
 var API = "https://llf-pressing.nicolas7lejeune.workers.dev";
 
+// URL du Google Apps Script de sauvegarde (vide = backup désactivé)
+// Colle ici l'URL obtenue après déploiement (voir backup_apps_script.gs)
+var BACKUP_URL = "";
+
 // ═══════════════════════════════════════════════════════════
 var clients = [];
 var filter  = "all";
@@ -234,6 +238,18 @@ function pushClients(){
     pending=false;
     setSyncStatus("err","Erreur de sauvegarde");
   });
+  backupToSheet();
+}
+
+// Sauvegarde silencieuse vers Google Sheets (de secours, en plus de Cloudflare)
+function backupToSheet(){
+  if(!BACKUP_URL) return;
+  fetch(BACKUP_URL,{
+    method:"POST",
+    mode:"no-cors", // Apps Script ne renvoie pas de CORS, mais l'écriture fonctionne
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({clients:clients})
+  }).catch(function(){ /* silencieux : le backup ne doit jamais bloquer l'app */ });
 }
 
 function render(){
@@ -415,7 +431,7 @@ function toast(msg){
 }
 
 fetchClients();
-setInterval(function(){if(!pending)fetchClients();},20000);
+setInterval(function(){if(!pending)fetchClients();},3600000); // 1 heure
 </script>
 </body>
 </html>

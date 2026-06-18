@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
-    :root{--navy:#1d3a5f;--navy2:#254a78;--or:#ff8f00;--bl:#1565c0;--gn:#2e7d32;--mist:#e8eaf6;--waze:#33ccff;--r:14px;--sh:0 2px 12px rgba(0,0,0,.10);}
+    :root{--navy:#1d3a5f;--navy2:#254a78;--or:#ff8f00;--vi:#7b1fa2;--bl:#1565c0;--gn:#2e7d32;--mist:#e8eaf6;--waze:#33ccff;--r:14px;--sh:0 2px 12px rgba(0,0,0,.10);}
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:#f0f2f9;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;min-height:100dvh;padding-bottom:90px;}
     .topbar{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:10px 16px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.3);}
@@ -63,16 +63,16 @@
     .spill{flex:1;background:#fff;border-radius:12px;padding:10px 8px;text-align:center;box-shadow:var(--sh);}
     .snum{font-size:26px;font-weight:900;line-height:1;}
     .slbl{font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
-    .spill.c .snum{color:var(--or);}.spill.l .snum{color:var(--bl);}
+    .spill.c .snum{color:var(--or);}.spill.t .snum{color:var(--vi);}.spill.l .snum{color:var(--bl);}
     #cards{padding:14px 14px 0;display:flex;flex-direction:column;gap:12px;}
     .card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;border-left:5px solid transparent;animation:fs .25s ease both;}
-    .card.sc{border-left-color:var(--or);}.card.sl{border-left-color:var(--bl);}.card.st{border-left-color:var(--gn);opacity:.78;}
+    .card.sc{border-left-color:var(--or);}.card.sv{border-left-color:var(--vi);}.card.sl{border-left-color:var(--bl);}.card.st{border-left-color:var(--gn);opacity:.78;}
     @keyframes fs{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     .card-head{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 14px 6px;gap:8px;}
     .cname{font-size:16px;font-weight:800;color:var(--navy);}
     .cbags{font-size:12px;color:#789;margin-top:2px;}
     .sbadge{flex-shrink:0;font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.6px;}
-    .sbadge.bc{background:#fff3e0;color:var(--or);}.sbadge.bl{background:#e3f2fd;color:var(--bl);}.sbadge.bt{background:#e8f5e9;color:var(--gn);}
+    .sbadge.bc{background:#fff3e0;color:var(--or);}.sbadge.bv{background:#f3e5f5;color:var(--vi);}.sbadge.bl{background:#e3f2fd;color:var(--bl);}.sbadge.bt{background:#e8f5e9;color:var(--gn);}
     .card-addr{display:flex;align-items:center;gap:8px;padding:0 14px 6px;}
     .addr-txt{font-size:12px;color:#567;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .waze-btn{flex-shrink:0;display:flex;align-items:center;gap:5px;background:var(--waze);color:#fff;font-size:11px;font-weight:900;padding:5px 10px;border-radius:8px;text-decoration:none;white-space:nowrap;}
@@ -81,9 +81,9 @@
     .dchip{font-size:11px;background:var(--mist);color:#456;padding:4px 10px;border-radius:8px;}
     .dchip.ov{background:#fff3e0;color:#bf360c;font-weight:700;}
     .card-actions{border-top:1px solid #f0f0f0;display:flex;align-items:center;padding:8px 10px;gap:6px;}
-    .sbtn{flex:1;font-size:11px;font-weight:700;border:2px solid;border-radius:10px;padding:7px 4px;cursor:pointer;background:#fff;text-align:center;transition:all .15s;}
-    .sbtn.bc2{border-color:var(--or);color:var(--or);}.sbtn.bl2{border-color:var(--bl);color:var(--bl);}.sbtn.bt2{border-color:var(--gn);color:var(--gn);}
-    .sbtn.abc{background:var(--or);color:#fff;}.sbtn.abl{background:var(--bl);color:#fff;}.sbtn.abt{background:var(--gn);color:#fff;}
+    .sbtn{flex:1;font-size:9.5px;font-weight:700;border:2px solid;border-radius:9px;padding:7px 2px;cursor:pointer;background:#fff;text-align:center;transition:all .15s;}
+    .sbtn.bc2{border-color:var(--or);color:var(--or);}.sbtn.bv2{border-color:var(--vi);color:var(--vi);}.sbtn.bl2{border-color:var(--bl);color:var(--bl);}.sbtn.bt2{border-color:var(--gn);color:var(--gn);}
+    .sbtn.abc{background:var(--or);color:#fff;}.sbtn.abv{background:var(--vi);color:#fff;}.sbtn.abl{background:var(--bl);color:#fff;}.sbtn.abt{background:var(--gn);color:#fff;}
     .ibtn{width:34px;height:34px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
     .ibtn.ed{background:#f3f4f6;color:#3949ab;}.ibtn.dl{background:#fef2f2;color:#c62828;}
     .ibtn:active{transform:scale(.92);}
@@ -136,11 +136,13 @@
 <div class="filters" id="filters">
   <button class="ftab active" data-f="all">Tous <span class="cnt" id="ba">0</span></button>
   <button class="ftab" data-f="collecte">&#128230; Collecte <span class="cnt" id="bc">0</span></button>
+  <button class="ftab" data-f="traitement">&#129529; Traitement <span class="cnt" id="bv">0</span></button>
   <button class="ftab" data-f="livraison">&#128666; Livraison <span class="cnt" id="bl">0</span></button>
   <button class="ftab" data-f="termine">&#10003; Termin&#233; <span class="cnt" id="bt">0</span></button>
 </div>
 <div class="statsbar">
   <div class="spill c"><div class="snum" id="sc">0</div><div class="slbl">Collectes</div></div>
+  <div class="spill t"><div class="snum" id="sv">0</div><div class="slbl">Traitement</div></div>
   <div class="spill l"><div class="snum" id="sl">0</div><div class="slbl">Livraisons</div></div>
 </div>
 <div id="cards"></div>
@@ -168,6 +170,7 @@
       <div><label class="flbl">Statut</label>
         <select class="finp" id="fstat">
           <option value="collecte">&#128230; Collecte</option>
+          <option value="traitement">&#129529; Traitement</option>
           <option value="livraison">&#128666; Livraison</option>
           <option value="termine">&#10003; Termin&#233;</option>
         </select>
@@ -188,7 +191,7 @@ var API = "https://llf-pressing.nicolas7lejeune.workers.dev";
 
 // URL du Google Apps Script de sauvegarde (vide = backup désactivé)
 // Colle ici l'URL obtenue après déploiement (voir backup_apps_script.gs)
-var BACKUP_URL = "https://script.google.com/macros/s/AKfycbyFN2YK7knN9p7pG7PWznSQbe3tsabWM-yAKLbjV7wCLGf3KqR3VkYmRybnEiIEsfrU/exec";
+var BACKUP_URL = "";
 
 // ═══════════════════════════════════════════════════════════
 var clients = [];
@@ -253,13 +256,15 @@ function backupToSheet(){
 }
 
 function render(){
-  var counts={collecte:0,livraison:0,termine:0};
+  var counts={collecte:0,traitement:0,livraison:0,termine:0};
   clients.forEach(function(c){if(counts[c.status]!==undefined)counts[c.status]++;});
   document.getElementById("ba").textContent=clients.length;
   document.getElementById("bc").textContent=counts.collecte;
+  document.getElementById("bv").textContent=counts.traitement;
   document.getElementById("bl").textContent=counts.livraison;
   document.getElementById("bt").textContent=counts.termine;
   document.getElementById("sc").textContent=counts.collecte;
+  document.getElementById("sv").textContent=counts.traitement;
   document.getElementById("sl").textContent=counts.livraison;
   document.getElementById("tc").textContent=clients.length+" client"+(clients.length>1?"s":"");
   document.getElementById("td").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
@@ -352,20 +357,24 @@ function renderPlanning(){
 
 function buildCard(c){
   var div=document.createElement("div");
-  div.className="card "+(c.status==="collecte"?"sc":c.status==="livraison"?"sl":"st");
+  var statusClassMap={collecte:"sc",traitement:"sv",livraison:"sl",termine:"st"};
+  div.className="card "+(statusClassMap[c.status]||"sc");
   div.dataset.id=c.id;
-  var bcls=c.status==="collecte"?"bc":c.status==="livraison"?"bl":"bt";
-  var slbl=c.status==="collecte"?"Collecte":c.status==="livraison"?"Livraison":"Terminé";
+  var badgeClassMap={collecte:"bc",traitement:"bv",livraison:"bl",termine:"bt"};
+  var bcls=badgeClassMap[c.status]||"bc";
+  var labelMap={collecte:"Collecte",traitement:"Traitement",livraison:"Livraison",termine:"Terminé"};
+  var slbl=labelMap[c.status]||c.status;
   var waze=c.address?wazeHref(c.address):null;
   var coOv=isOv(c.collectDate,c.status);var deOv=isOv(c.deliverDate,c.status);
   var addrRow=c.address?"<div class='card-addr'><div class='addr-txt'>&#128205; "+esc(c.address)+"</div>"+(waze?"<a class='waze-btn' href='"+esc(waze)+"' target='_blank'>&#8599; Waze</a>":"")+"</div>":"";
   var bagsLine=(c.bags&&c.bags>0)?"<div class='cbags'>&#128717; "+c.bags+" sac"+(c.bags>1?"s":"")+"</div>":"";
-  var acBc=c.status==="collecte"?" abc":"";var acBl=c.status==="livraison"?" abl":"";var acBt=c.status==="termine"?" abt":"";
+  var acBc=c.status==="collecte"?" abc":"";var acBv=c.status==="traitement"?" abv":"";var acBl=c.status==="livraison"?" abl":"";var acBt=c.status==="termine"?" abt":"";
   div.innerHTML="<div class='card-head'><div><div class='cname'>"+esc(c.name)+"</div>"+bagsLine+"</div><span class='sbadge "+bcls+"'>"+slbl+"</span></div>"
     +addrRow
-    +"<div class='card-dates'><div class='dchip"+(coOv?" ov":"")+"'>&#128197; Collecte : "+fmtDateTime(c.collectDate,c.collectTime)+"</div>"
-    +"<div class='dchip"+(deOv?" ov":"")+"'>&#10003; Livraison : "+fmtDateTime(c.deliverDate,c.deliverTime)+"</div></div>"
+    +"<div class='card-dates'><div class='dchip"+(coOv?" ov":"")+"'>&#128197; Collecte : "+fmtDateTime(c.collectDate,c.collectTime)+"</div>"
+    +"<div class='dchip"+(deOv?" ov":"")+"'>&#10003; Livraison : "+fmtDateTime(c.deliverDate,c.deliverTime)+"</div></div>"
     +"<div class='card-actions'><button class='sbtn bc2"+acBc+"' data-a='status' data-v='collecte'>&#128230; Collecte</button>"
+    +"<button class='sbtn bv2"+acBv+"' data-a='status' data-v='traitement'>&#129529; Traitement</button>"
     +"<button class='sbtn bl2"+acBl+"' data-a='status' data-v='livraison'>&#128666; Livraison</button>"
     +"<button class='sbtn bt2"+acBt+"' data-a='status' data-v='termine'>&#10003; Terminé</button>"
     +"<div style='display:flex;gap:4px'><button class='ibtn ed' data-a='edit'>&#9999;</button><button class='ibtn dl' data-a='del'>&#128465;</button></div></div>";

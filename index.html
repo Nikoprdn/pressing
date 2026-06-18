@@ -112,6 +112,20 @@
     .finp{width:100%;border:2px solid #e0e0e0;border-radius:10px;padding:10px 14px;font-size:16px;font-family:inherit;outline:none;transition:border-color .15s;}
     .finp:focus{border-color:var(--navy);}.finp.err{border-color:#e53935;}
     .finp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .port-picker-btn{width:44px;height:44px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;color:var(--navy);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .port-picker-btn:active{background:var(--mist);}
+    .port-overlay{position:fixed;inset:0;z-index:250;display:none;align-items:flex-end;justify-content:center;}
+    .port-overlay.open{display:flex;}
+    .port-overlay-bg{position:absolute;inset:0;background:rgba(10,10,30,.5);}
+    .port-card{position:relative;background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:80dvh;overflow-y:auto;z-index:1;}
+    .port-head{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:18px 20px;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;}
+    .port-head h2{color:#fff;font-size:16px;font-weight:800;}
+    .port-close{width:30px;height:30px;border-radius:8px;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:14px;cursor:pointer;}
+    .port-list{padding:8px 16px calc(20px + env(safe-area-inset-bottom));}
+    .port-city{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#999;margin-top:16px;margin-bottom:6px;}
+    .port-city:first-child{margin-top:14px;}
+    .port-item{width:100%;text-align:left;background:#f8f9ff;border:1.5px solid #e8eaf6;border-radius:10px;padding:11px 14px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;margin-bottom:6px;display:block;}
+    .port-item:active{background:var(--mist);}
     .btn-save{background:linear-gradient(135deg,var(--navy),#3949ab);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:15px;padding:13px;cursor:pointer;width:100%;}
     .btn-cancel{background:#f3f4f6;color:#666;border:none;border-radius:12px;font-weight:700;font-size:14px;padding:12px;cursor:pointer;width:100%;}
     .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 22px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:300;white-space:nowrap;pointer-events:none;}
@@ -249,6 +263,17 @@
   </div>
 </div>
 
+<div class="port-overlay" id="port-overlay">
+  <div class="port-overlay-bg" id="port-overlay-bg"></div>
+  <div class="port-card">
+    <div class="port-head">
+      <h2>&#9875; Choisir un port</h2>
+      <button class="port-close" id="port-close-btn">&#10005;</button>
+    </div>
+    <div class="port-list" id="port-list"></div>
+  </div>
+</div>
+
 <div class="modal-wrap" id="modal">
   <div class="mbg" id="mbg"></div>
   <div class="mcard">
@@ -256,7 +281,14 @@
     <div class="mbody">
       <input type="hidden" id="fid"/>
       <div><label class="flbl">Nom du client / bateau</label><input class="finp" id="fname" type="text" placeholder="Ex. Le Mistrau, Mme Dupont…" autocomplete="off"/></div>
-      <div><label class="flbl">Adresse</label><input class="finp" id="faddr" type="text" placeholder="Ex. 12 quai de la Criée, Toulon" autocomplete="street-address"/></div>
+      <div>
+        <label class="flbl">Adresse</label>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <input class="finp" id="faddr" type="text" placeholder="Ex. 12 quai de la Criée, Toulon" autocomplete="street-address" list="ports-datalist" style="flex:1"/>
+          <button type="button" id="port-picker-btn" class="port-picker-btn" title="Choisir un port">&#9875;</button>
+        </div>
+        <datalist id="ports-datalist"></datalist>
+      </div>
       <div><label class="flbl">Nombre de sacs</label><input class="finp" id="fbags" type="number" min="0" placeholder="0"/></div>
       <div class="finp-row">
         <div><label class="flbl">Date collecte</label><input class="finp" id="fcol" type="date"/></div>
@@ -304,6 +336,79 @@ function fmtDateTime(iso,time){var d=fmtDate(iso);if(!iso)return d;return time?d
 function isOv(iso,s){return iso&&s!=="termine"&&iso<todayISO();}
 function wazeHref(a){return a?"https://waze.com/ul?q="+encodeURIComponent(a)+"&navigate=yes":null;}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// ── PORTS PRÉDÉFINIS ──────────────────────────────────────────
+// Chaque adresse inclut ville + pays pour une géolocalisation Waze fiable
+var PORTS_BY_CITY = [
+  { city:"Menton", ports:[
+    "Port de Garavan, Menton, France",
+    "Vieux Port de Menton, Menton, France"
+  ]},
+  { city:"Monaco", ports:[
+    "Port Hercule, Monaco",
+    "Port de Fontvieille, Monaco"
+  ]},
+  { city:"Cap d'Ail", ports:[
+    "Port de Cap d'Ail, Cap d'Ail, France"
+  ]},
+  { city:"Villefranche-sur-Mer", ports:[
+    "Port de la Darse, Villefranche-sur-Mer, France",
+    "Port de la Santé, Villefranche-sur-Mer, France"
+  ]},
+  { city:"Nice", ports:[
+    "Port Lympia, Nice, France"
+  ]},
+  { city:"Antibes", ports:[
+    "Port Vauban, Antibes, France",
+    "Port Gallice, Antibes, France"
+  ]},
+  { city:"Cannes", ports:[
+    "Vieux-Port de Cannes, Cannes, France",
+    "Port Pierre Canto, Cannes, France"
+  ]},
+  { city:"Mandelieu-la-Napoule", ports:[
+    "Port La Napoule, Mandelieu-la-Napoule, France",
+    "Port de la Rague, Mandelieu-la-Napoule, France"
+  ]}
+];
+
+function populatePortsDatalist(){
+  var dl=document.getElementById("ports-datalist");
+  var html="";
+  PORTS_BY_CITY.forEach(function(grp){
+    grp.ports.forEach(function(p){
+      html+="<option value='"+esc(p)+"'></option>";
+    });
+  });
+  dl.innerHTML=html;
+}
+populatePortsDatalist();
+
+function openPortPicker(){
+  var list=document.getElementById("port-list");
+  var html="";
+  PORTS_BY_CITY.forEach(function(grp){
+    html+="<div class='port-city'>"+esc(grp.city)+"</div>";
+    grp.ports.forEach(function(p){
+      html+="<button type='button' class='port-item' data-port='"+esc(p)+"'>&#9875; "+esc(p)+"</button>";
+    });
+  });
+  list.innerHTML=html;
+  document.getElementById("port-overlay").classList.add("open");
+}
+function closePortPicker(){
+  document.getElementById("port-overlay").classList.remove("open");
+}
+
+document.getElementById("port-picker-btn").addEventListener("click",openPortPicker);
+document.getElementById("port-overlay-bg").addEventListener("click",closePortPicker);
+document.getElementById("port-close-btn").addEventListener("click",closePortPicker);
+document.getElementById("port-list").addEventListener("click",function(e){
+  var btn=e.target.closest(".port-item");
+  if(!btn)return;
+  document.getElementById("faddr").value=btn.dataset.port;
+  closePortPicker();
+});
 
 function setSyncStatus(state,msg){
   document.getElementById("dot").className="dot "+state;

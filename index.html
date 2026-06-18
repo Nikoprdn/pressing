@@ -155,6 +155,11 @@
 <button class="fab" id="fab">&#43;</button>
 <div class="toast" id="toast"></div>
 
+<iframe name="backup-frame" id="backup-frame" style="display:none"></iframe>
+<form id="backup-form" method="POST" target="backup-frame" style="display:none">
+  <input type="hidden" name="payload" id="backup-payload"/>
+</form>
+
 <div class="modal-wrap" id="modal">
   <div class="mbg" id="mbg"></div>
   <div class="mcard">
@@ -252,12 +257,11 @@ function pushClients(){
 // Sauvegarde silencieuse vers Google Sheets (de secours, en plus de Cloudflare)
 function backupToSheet(){
   if(!BACKUP_URL) return;
-  fetch(BACKUP_URL,{
-    method:"POST",
-    mode:"no-cors", // Apps Script ne renvoie pas de CORS, mais l'écriture fonctionne
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({clients:clients})
-  }).catch(function(){ /* silencieux : le backup ne doit jamais bloquer l'app */ });
+  try{
+    document.getElementById("backup-form").action=BACKUP_URL;
+    document.getElementById("backup-payload").value=JSON.stringify({clients:clients});
+    document.getElementById("backup-form").submit();
+  }catch(e){ /* silencieux : le backup ne doit jamais bloquer l'app */ }
 }
 
 function render(){

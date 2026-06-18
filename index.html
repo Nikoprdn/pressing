@@ -213,7 +213,7 @@
 <div class="toast" id="toast"></div>
 
 <iframe name="backup-frame" id="backup-frame" style="display:none"></iframe>
-<form id="backup-form" method="GET" target="backup-frame" style="display:none">
+<form id="backup-form" method="POST" target="backup-frame" style="display:none">
   <input type="hidden" name="payload" id="backup-payload"/>
 </form>
 
@@ -451,13 +451,32 @@ function pushClients(){
 }
 
 // Sauvegarde silencieuse vers Google Sheets (de secours, en plus de Cloudflare)
+var lastKnownBackupTime=null;
+
 function backupToSheet(){
   if(!BACKUP_URL) return;
   try{
     document.getElementById("backup-form").action=BACKUP_URL;
     document.getElementById("backup-payload").value=JSON.stringify({clients:clients});
     document.getElementById("backup-form").submit();
+    // Vérifie après coup que la sauvegarde a bien été enregistrée côté script
+    setTimeout(checkBackupStatus,4000);
   }catch(e){ /* silencieux : le backup ne doit jamais bloquer l'app */ }
+}
+
+function checkBackupStatus(){
+  if(!BACKUP_URL) return;
+  fetch(BACKUP_URL+"?status=1")
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.lastSaveAt && data.lastSaveAt!==lastKnownBackupTime){
+        lastKnownBackupTime=data.lastSaveAt;
+        // succès silencieux, pas besoin de notifier à chaque fois
+      } else if(!data.lastSaveAt){
+        toast("\u26a0\ufe0f Sauvegarde Google Sheets jamais re\u00e7ue");
+      }
+    })
+    .catch(function(){ /* vérif silencieuse, ne bloque rien */ });
 }
 
 function render(){

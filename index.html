@@ -266,10 +266,11 @@ function render(){
   document.getElementById("sc").textContent=counts.collecte;
   document.getElementById("sv").textContent=counts.traitement;
   document.getElementById("sl").textContent=counts.livraison;
-  document.getElementById("tc").textContent=clients.length+" client"+(clients.length>1?"s":"");
+  var activeCount=clients.length-counts.termine;
+  document.getElementById("tc").textContent=activeCount+" client"+(activeCount>1?"s":"")+" en cours";
   document.getElementById("td").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
   renderPlanning();
-  var f=filter==="all"?clients:clients.filter(function(c){return c.status===filter;});
+  var f=filter==="all"?clients.filter(function(c){return c.status!=="termine";}):clients.filter(function(c){return c.status===filter;});
   var cont=document.getElementById("cards");
   var emp=document.getElementById("empty");
   cont.innerHTML="";

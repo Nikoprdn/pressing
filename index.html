@@ -13,14 +13,37 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:#f0f2f9;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;min-height:100dvh;padding-bottom:90px;}
     .topbar{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:10px 16px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.3);}
-    .topbar img{height:68px;width:auto;object-fit:contain;display:block;}
+    .topbar img{height:136px;width:auto;object-fit:contain;display:block;}
     .topbar-meta{text-align:right;color:rgba(255,255,255,.8);font-size:11px;line-height:1.6;}
     .syncbar{background:#12254a;padding:5px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.7);}
     .dot{width:7px;height:7px;border-radius:50%;background:#777;flex-shrink:0;transition:background .3s;}
     .dot.ok{background:#69f0ae;}.dot.err{background:#ff5252;}.dot.spin{background:#ffeb3b;animation:pulse 1s infinite;}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
     .plan-section{background:#fff;border-bottom:1px solid #e0e0e0;padding:12px 14px;}
-    .plan-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:#999;margin-bottom:8px;}
+    .plan-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
+    .plan-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:#999;}
+    .plan-nav{display:flex;align-items:center;gap:6px;}
+    .pnav-btn{width:26px;height:26px;border-radius:8px;border:none;background:var(--mist);color:var(--navy);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+    .pnav-btn:active{background:var(--navy);color:#fff;}
+    .pnav-label{font-size:11px;font-weight:700;color:var(--navy);min-width:120px;text-align:center;}
+    .pnav-today{font-size:10px;font-weight:700;color:var(--navy);background:var(--mist);border:none;border-radius:8px;padding:5px 10px;cursor:pointer;}
+    .pnav-today:active{background:var(--navy);color:#fff;}
+    .week-grid{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;}
+    .week-grid::-webkit-scrollbar{display:none;}
+    .day-col{flex-shrink:0;width:150px;border-radius:12px;background:#f8f9ff;border:1.5px solid #e8eaf6;overflow:hidden;}
+    .day-col.is-today{border-color:var(--navy);background:#eef1ff;}
+    .day-head{padding:7px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#789;border-bottom:1px solid #e8eaf6;display:flex;justify-content:space-between;align-items:center;}
+    .day-col.is-today .day-head{color:var(--navy);}
+    .day-body{padding:6px;display:flex;flex-direction:column;gap:6px;min-height:40px;}
+    .day-empty{font-size:10px;color:#bbb;text-align:center;padding:8px 0;}
+    .day-item{border-radius:9px;padding:6px 8px;font-size:11px;}
+    .day-item.dc{background:#fff3e0;border:1px solid #ffcc80;}
+    .day-item.dl{background:#e3f2fd;border:1px solid #90caf9;}
+    .day-item .di-time{font-weight:800;font-size:11px;}
+    .day-item.dc .di-time{color:var(--or);}.day-item.dl .di-time{color:var(--bl);}
+    .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+    .day-item .di-row{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+    .di-waze{flex-shrink:0;width:20px;height:20px;border-radius:6px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;text-decoration:none;}
     .plan-empty{font-size:13px;color:#bbb;text-align:center;padding:6px 0;}
     .plan-scroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
     .plan-scroll::-webkit-scrollbar{display:none;}
@@ -30,7 +53,7 @@
     .plbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
     .plan-chip.pc .plbl{color:var(--or);}.plan-chip.pl .plbl{color:var(--bl);}
     .plan-waze{width:28px;height:28px;border-radius:8px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;text-decoration:none;flex-shrink:0;}
-    .filters{display:flex;gap:8px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;background:#f8f9ff;border-bottom:1px solid #e0e0e0;position:sticky;top:92px;z-index:40;}
+    .filters{display:flex;gap:8px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;background:#f8f9ff;border-bottom:1px solid #e0e0e0;position:sticky;top:156px;z-index:40;}
     .filters::-webkit-scrollbar{display:none;}
     .ftab{flex-shrink:0;border:2px solid transparent;background:var(--mist);color:var(--navy);font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;transition:all .18s;}
     .ftab.active{background:var(--navy);color:#fff;}
@@ -99,7 +122,15 @@
   <span id="slbl">Connexion&#8230;</span>
 </div>
 <div class="plan-section">
-  <div class="plan-title">&#128197; Planning du jour</div>
+  <div class="plan-header">
+    <div class="plan-title">&#128197; Planning de la semaine</div>
+    <div class="plan-nav">
+      <button class="pnav-btn" id="pnav-prev">&#8249;</button>
+      <span class="pnav-label" id="pnav-label"></span>
+      <button class="pnav-btn" id="pnav-next">&#8250;</button>
+      <button class="pnav-today" id="pnav-today">Aujourd'hui</button>
+    </div>
+  </div>
   <div id="plan"></div>
 </div>
 <div class="filters" id="filters">
@@ -128,7 +159,11 @@
       <div><label class="flbl">Nombre de sacs</label><input class="finp" id="fbags" type="number" min="0" placeholder="0"/></div>
       <div class="finp-row">
         <div><label class="flbl">Date collecte</label><input class="finp" id="fcol" type="date"/></div>
+        <div><label class="flbl">Heure collecte</label><input class="finp" id="fcolh" type="time"/></div>
+      </div>
+      <div class="finp-row">
         <div><label class="flbl">Date livraison</label><input class="finp" id="fdel" type="date"/></div>
+        <div><label class="flbl">Heure livraison</label><input class="finp" id="fdelh" type="time"/></div>
       </div>
       <div><label class="flbl">Statut</label>
         <select class="finp" id="fstat">
@@ -159,6 +194,7 @@ var pending = false;
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function todayISO(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function fmtDate(iso){if(!iso)return"—";var p=iso.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:iso;}
+function fmtDateTime(iso,time){var d=fmtDate(iso);if(!iso)return d;return time?d+" \u00e0 "+time:d;}
 function isOv(iso,s){return iso&&s!=="termine"&&iso<todayISO();}
 function wazeHref(a){return a?"https://waze.com/ul?q="+encodeURIComponent(a)+"&navigate=yes":null;}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
@@ -220,22 +256,82 @@ function render(){
   else{emp.style.display="none";f.forEach(function(c){cont.appendChild(buildCard(c));});}
 }
 
+// ── WEEK PLANNING ────────────────────────────────────────────
+var weekOffset = 0; // 0 = semaine courante, -1 = semaine précédente, +1 = suivante
+var DAY_NAMES = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+var MONTH_NAMES = ["janv.","f\u00e9vr.","mars","avr.","mai","juin","juil.","ao\u00fbt","sept.","oct.","nov.","d\u00e9c."];
+
+function isoDate(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+
+function getWeekStart(offset){
+  var d=new Date();
+  d.setHours(0,0,0,0);
+  var dow=d.getDay(); // 0=dim..6=sam
+  var diffToMonday=(dow===0?-6:1-dow);
+  d.setDate(d.getDate()+diffToMonday+offset*7);
+  return d;
+}
+
 function renderPlanning(){
-  var today=todayISO();var el=document.getElementById("plan");var items=[];
-  clients.forEach(function(c){
-    if(c.status==="termine")return;
-    if(c.collectDate===today)items.push({c:c,type:"collecte"});
-    else if(c.deliverDate===today)items.push({c:c,type:"livraison"});
+  var todayStr=todayISO();
+  var weekStart=getWeekStart(weekOffset);
+  var days=[];
+  for(var i=0;i<7;i++){
+    var d=new Date(weekStart);
+    d.setDate(weekStart.getDate()+i);
+    days.push(d);
+  }
+
+  // Label semaine (ex: "9 - 15 juin")
+  var first=days[0], last=days[6];
+  var label;
+  if(first.getMonth()===last.getMonth()){
+    label=first.getDate()+" - "+last.getDate()+" "+MONTH_NAMES[first.getMonth()];
+  } else {
+    label=first.getDate()+" "+MONTH_NAMES[first.getMonth()]+" - "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
+  }
+  document.getElementById("pnav-label").textContent=label;
+
+  var el=document.getElementById("plan");
+  var html="<div class='week-grid'>";
+
+  days.forEach(function(d){
+    var iso=isoDate(d);
+    var isToday=iso===todayStr;
+    var dayItems=[];
+    clients.forEach(function(c){
+      if(c.status==="termine")return;
+      if(c.collectDate===iso) dayItems.push({c:c,type:"collecte",time:c.collectTime});
+      if(c.deliverDate===iso) dayItems.push({c:c,type:"livraison",time:c.deliverTime});
+    });
+    // tri par heure
+    dayItems.sort(function(a,b){
+      if(!a.time) return 1;
+      if(!b.time) return -1;
+      return a.time.localeCompare(b.time);
+    });
+
+    html+="<div class='day-col"+(isToday?" is-today":"")+"'>"
+      +"<div class='day-head'><span>"+DAY_NAMES[d.getDay()]+" "+d.getDate()+"</span>"+(isToday?"<span>&#8226;</span>":"")+"</div>"
+      +"<div class='day-body'>";
+
+    if(dayItems.length===0){
+      html+="<div class='day-empty'>\u2014</div>";
+    } else {
+      dayItems.forEach(function(it){
+        var c=it.c; var type=it.type; var waze=c.address?wazeHref(c.address):null;
+        var icon=type==="collecte"?"&#128230;":"&#128666;";
+        html+="<div class='day-item "+(type==="collecte"?"dc":"dl")+"'>"
+          +"<div class='di-row'><span class='di-time'>"+icon+" "+(it.time||"--:--")+"</span>"
+          +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank'>&#8599;</a>":"")
+          +"</div><div class='di-name'>"+esc(c.name)+"</div></div>";
+      });
+    }
+    html+="</div></div>";
   });
-  if(items.length===0){el.innerHTML="<div class='plan-empty'>Rien de prévu aujourd'hui &#127881;</div>";return;}
-  var html="<div class='plan-scroll'>";
-  items.forEach(function(it){
-    var c=it.c;var type=it.type;var waze=c.address?wazeHref(c.address):null;
-    html+="<div class='plan-chip "+(type==="collecte"?"pc":"pl")+"'>"+(type==="collecte"?"&#128230;":"&#128666;")
-      +" <div style='min-width:0'><div class='pname'>"+esc(c.name)+"</div><div class='plbl'>"+(type==="collecte"?"À collecter":"À livrer")+"</div></div>"
-      +(waze?"<a class='plan-waze' href='"+esc(waze)+"' target='_blank'>&#8599;</a>":"")+"</div>";
-  });
-  el.innerHTML=html+"</div>";
+
+  html+="</div>";
+  el.innerHTML=html;
 }
 
 function buildCard(c){
@@ -251,8 +347,8 @@ function buildCard(c){
   var acBc=c.status==="collecte"?" abc":"";var acBl=c.status==="livraison"?" abl":"";var acBt=c.status==="termine"?" abt":"";
   div.innerHTML="<div class='card-head'><div><div class='cname'>"+esc(c.name)+"</div>"+bagsLine+"</div><span class='sbadge "+bcls+"'>"+slbl+"</span></div>"
     +addrRow
-    +"<div class='card-dates'><div class='dchip"+(coOv?" ov":"")+"'>&#128197; Collecte : "+fmtDate(c.collectDate)+"</div>"
-    +"<div class='dchip"+(deOv?" ov":"")+"'>&#10003; Livraison : "+fmtDate(c.deliverDate)+"</div></div>"
+    +"<div class='card-dates'><div class='dchip"+(coOv?" ov":"")+"'>&#128197; Collecte : "+fmtDateTime(c.collectDate,c.collectTime)+"</div>"
+    +"<div class='dchip"+(deOv?" ov":"")+"'>&#10003; Livraison : "+fmtDateTime(c.deliverDate,c.deliverTime)+"</div></div>"
     +"<div class='card-actions'><button class='sbtn bc2"+acBc+"' data-a='status' data-v='collecte'>&#128230; Collecte</button>"
     +"<button class='sbtn bl2"+acBl+"' data-a='status' data-v='livraison'>&#128666; Livraison</button>"
     +"<button class='sbtn bt2"+acBt+"' data-a='status' data-v='termine'>&#10003; Terminé</button>"
@@ -269,6 +365,10 @@ document.getElementById("cards").addEventListener("click",function(e){
   else if(btn.dataset.a==="del"){if(confirm("Supprimer "+c.name+" ?")){clients=clients.filter(function(x){return x.id!==id;});render();pushClients();toast("Supprimé");}}
 });
 
+document.getElementById("pnav-prev").addEventListener("click",function(){weekOffset--;renderPlanning();});
+document.getElementById("pnav-next").addEventListener("click",function(){weekOffset++;renderPlanning();});
+document.getElementById("pnav-today").addEventListener("click",function(){weekOffset=0;renderPlanning();});
+
 document.getElementById("filters").addEventListener("click",function(e){
   var tab=e.target.closest(".ftab");if(!tab)return;
   document.querySelectorAll(".ftab").forEach(function(t){t.classList.remove("active");});
@@ -282,7 +382,9 @@ function openModal(c){
   document.getElementById("faddr").value=c?(c.address||""):"";
   document.getElementById("fbags").value=c?(c.bags?""+c.bags:""):"";
   document.getElementById("fcol").value=c?(c.collectDate||today):today;
+  document.getElementById("fcolh").value=c?(c.collectTime||""):"";
   document.getElementById("fdel").value=c?(c.deliverDate||""):"";
+  document.getElementById("fdelh").value=c?(c.deliverTime||""):"";
   document.getElementById("fstat").value=c?c.status:"collecte";
   document.getElementById("fname").classList.remove("err");
   document.getElementById("mtitle").textContent=c?"Modifier le client":"Nouveau client";
@@ -300,7 +402,7 @@ document.getElementById("fsave").addEventListener("click",function(){
   if(!name){nameEl.classList.add("err");nameEl.focus();return;}
   nameEl.classList.remove("err");
   var id=document.getElementById("fid").value;
-  var data={name:name,address:document.getElementById("faddr").value.trim(),bags:parseInt(document.getElementById("fbags").value,10)||0,collectDate:document.getElementById("fcol").value,deliverDate:document.getElementById("fdel").value,status:document.getElementById("fstat").value};
+  var data={name:name,address:document.getElementById("faddr").value.trim(),bags:parseInt(document.getElementById("fbags").value,10)||0,collectDate:document.getElementById("fcol").value,collectTime:document.getElementById("fcolh").value,deliverDate:document.getElementById("fdel").value,deliverTime:document.getElementById("fdelh").value,status:document.getElementById("fstat").value};
   if(id){var idx=clients.findIndex(function(c){return c.id===id;});if(idx!==-1)clients[idx]=Object.assign({},clients[idx],data);toast("Mis à jour ✔");}
   else{data.id=uid();clients.push(data);toast("Client ajouté ✔");}
   render();pushClients();closeModal();

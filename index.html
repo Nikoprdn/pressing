@@ -132,6 +132,8 @@
     .port-item:active{background:var(--mist);}
     .btn-save{background:linear-gradient(135deg,var(--navy),#3949ab);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:15px;padding:13px;cursor:pointer;width:100%;}
     .btn-cancel{background:#f3f4f6;color:#666;border:none;border-radius:12px;font-weight:700;font-size:14px;padding:12px;cursor:pointer;width:100%;}
+    .btn-delete{background:#fef2f2;color:#c62828;border:2px solid #fecaca;border-radius:12px;font-weight:800;font-size:14px;padding:11px;cursor:pointer;width:100%;}
+    .btn-delete:active{background:#fde2e2;}
     .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 22px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:300;white-space:nowrap;pointer-events:none;}
 
     /* LOCK SCREEN */
@@ -342,6 +344,7 @@
     </div>
     <div class="mfoot">
       <button class="btn-save" id="fsave">&#10003; Enregistrer</button>
+      <button class="btn-delete" id="fdelete" style="display:none">&#128465; Supprimer ce client</button>
       <button class="btn-cancel" id="fcancel">Annuler</button>
     </div>
   </div>
@@ -697,8 +700,7 @@ function buildCard(c){
     +"<div class='card-actions'><button class='sbtn bc2"+acBc+"' data-a='status' data-v='collecte'>&#128230; Collecte</button>"
     +"<button class='sbtn bv2"+acBv+"' data-a='status' data-v='traitement'>&#129529; Traitement</button>"
     +"<button class='sbtn bl2"+acBl+"' data-a='status' data-v='livraison'>&#128666; Livraison</button>"
-    +"<button class='sbtn bt2"+acBt+"' data-a='status' data-v='termine'>&#10003; Terminé</button>"
-    +"<div style='display:flex;gap:4px'><button class='ibtn ed' data-a='edit'>&#9999;</button><button class='ibtn dl' data-a='del'>&#128465;</button></div></div>";
+    +"<button class='sbtn bt2"+acBt+"' data-a='status' data-v='termine'>&#10003; Terminé</button></div>";
   return div;
 }
 
@@ -707,8 +709,13 @@ document.getElementById("cards").addEventListener("click",function(e){
   var id=btn.closest(".card").dataset.id;
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
   if(btn.dataset.a==="status"){c.status=btn.dataset.v;render();pushClients();toast("Statut → "+btn.dataset.v);}
-  else if(btn.dataset.a==="edit"){openModal(c);}
-  else if(btn.dataset.a==="del"){if(confirm("Supprimer "+c.name+" ?")){clients=clients.filter(function(x){return x.id!==id;});render();pushClients();toast("Supprimé");}}
+});
+
+document.getElementById("cards").addEventListener("dblclick",function(e){
+  if(e.target.closest(".card-actions"))return;
+  var card=e.target.closest(".card");if(!card)return;
+  var c=clients.find(function(x){return x.id===card.dataset.id;});if(!c)return;
+  openModal(c);
 });
 
 document.getElementById("pnav-prev").addEventListener("click",function(){if(dayOffset>0){dayOffset--;renderPlanning();}});
@@ -744,6 +751,7 @@ function openModal(c){
   document.getElementById("fstat").value=c?c.status:"collecte";
   document.getElementById("fname").classList.remove("err");
   document.getElementById("mtitle").textContent=c?"Modifier le client":"Nouveau client";
+  document.getElementById("fdelete").style.display=c?"block":"none";
   document.getElementById("modal").classList.add("open");
   setTimeout(function(){document.getElementById("fname").focus();},200);
 }
@@ -751,6 +759,18 @@ function closeModal(){document.getElementById("modal").classList.remove("open");
 document.getElementById("fab").addEventListener("click",function(){openModal(null);});
 document.getElementById("mbg").addEventListener("click",closeModal);
 document.getElementById("fcancel").addEventListener("click",closeModal);
+document.getElementById("fdelete").addEventListener("click",function(){
+  var id=document.getElementById("fid").value;
+  var c=clients.find(function(x){return x.id===id;});
+  if(!c)return;
+  if(confirm("Supprimer "+c.name+" ?")){
+    clients=clients.filter(function(x){return x.id!==id;});
+    closeModal();
+    render();
+    pushClients();
+    toast("Supprimé");
+  }
+});
 
 document.getElementById("fsave").addEventListener("click",function(){
   var nameEl=document.getElementById("fname");

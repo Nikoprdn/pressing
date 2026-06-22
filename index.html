@@ -637,7 +637,6 @@ function renderPlanning(){
     var isToday=iso===todayStr;
     var dayItems=[];
     clients.forEach(function(c){
-      if(c.status==="termine")return;
       if(c.collectDate===iso) dayItems.push({c:c,type:"collecte",time:c.collectTime});
       if(c.deliverDate===iso) dayItems.push({c:c,type:"livraison",time:c.deliverTime});
     });
@@ -660,8 +659,11 @@ function renderPlanning(){
         var relevantAddr=type==="collecte"?(c.collectAddress||c.address||""):(c.deliverAddress||c.address||"");
         var waze=relevantAddr?wazeHref(relevantAddr):null;
         var icon=type==="collecte"?"&#128230;":"&#128666;";
-        var okClass=c.status==="traitement"?" ok-traitement":"";
-        var okBadge=c.status==="traitement"?"<span class='ok-badge'>✓ OK</span>":"";
+        var isOkCollecte = type==="collecte" && c.status==="traitement";
+        var isOkLivraison = type==="livraison" && c.status==="termine";
+        var isOk = isOkCollecte || isOkLivraison;
+        var okClass=isOk?" ok-traitement":"";
+        var okBadge=isOk?"<span class='ok-badge'>✓ OK</span>":"";
         html+="<div class='day-item "+(type==="collecte"?"dc":"dl")+okClass+"'>"
           +"<div class='di-row'><span class='di-time'>"+icon+" "+(it.time||"--:--")+okBadge+"</span>"
           +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank'>&#8599;</a>":"")

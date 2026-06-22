@@ -178,6 +178,22 @@
     .hour-item .hi-del{width:30px;height:30px;border-radius:8px;border:none;background:#fef2f2;color:#c62828;font-size:12px;cursor:pointer;flex-shrink:0;margin-left:8px;}
     .hours-empty{text-align:center;color:#aaa;font-size:13px;padding:30px 0;}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    /* ── MENU ANCRE WAZE ── */
+    .anchor-btn{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom) + 58px + 12px);right:20px;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#33ccff,#0099cc);color:#fff;font-size:20px;border:none;box-shadow:0 4px 14px rgba(0,153,204,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .15s;}
+    .anchor-btn:active{transform:scale(.92);}
+    .waze-menu-overlay{position:fixed;inset:0;z-index:180;display:none;}
+    .waze-menu-overlay.open{display:block;}
+    .waze-menu{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom) + 58px + 12px + 44px + 8px);right:16px;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);width:min(310px,calc(100vw - 32px));max-height:70dvh;overflow-y:auto;z-index:190;animation:su .2s ease;}
+    .waze-menu-head{background:linear-gradient(135deg,#33ccff,#0099cc);padding:14px 16px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;}
+    .waze-menu-head h3{color:#fff;font-size:14px;font-weight:800;margin:0;}
+    .waze-menu-close{width:28px;height:28px;border-radius:8px;border:none;background:rgba(255,255,255,.22);color:#fff;font-size:13px;cursor:pointer;}
+    .waze-menu-city{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#999;padding:10px 14px 4px;}
+    .waze-menu-city:first-of-type{padding-top:12px;}
+    .waze-port-link{display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--navy);font-size:13px;font-weight:700;border-bottom:1px solid #f0f0f0;transition:background .12s;}
+    .waze-port-link:last-child{border-bottom:none;}
+    .waze-port-link:active{background:#f0faff;}
+    .waze-port-icon{width:30px;height:30px;border-radius:8px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
     @media(min-width:480px){#cards,.statsbar,.plan-section{max-width:480px;margin-left:auto;margin-right:auto;}.filters{justify-content:center;}}
   </style>
 </head>
@@ -219,6 +235,17 @@
 <div id="empty" style="display:none"><div class="eico">&#128085;</div><p>Aucun client.<br>Appuie sur <strong>+</strong> pour d&#233;marrer.</p></div>
 <button class="fab" id="fab">&#43;</button>
 <button class="clock-tab" id="clock-tab" title=" ">&#128336;</button>
+<button class="anchor-btn" id="anchor-btn" title="Navigation Waze vers les ports">&#9875;</button>
+
+<!-- MENU WAZE PORTS -->
+<div class="waze-menu-overlay" id="waze-menu-overlay"></div>
+<div class="waze-menu" id="waze-menu" style="display:none">
+  <div class="waze-menu-head">
+    <h3>&#9875; Navigation Waze</h3>
+    <button class="waze-menu-close" id="waze-menu-close">&#10005;</button>
+  </div>
+  <div id="waze-menu-body"></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <img id="backup-pixel" style="display:none" width="1" height="1" alt=""/>
@@ -396,7 +423,8 @@ var PORTS_BY_CITY = [
   ]},
   { city:"Monaco", ports:[
     "Port Hercule, Monaco",
-    "Port de Fontvieille, Monaco"
+    "Port de Fontvieille, Monaco",
+    "Yacht Club de Monaco, Monaco"
   ]},
   { city:"Cap d'Ail", ports:[
     "Port de Cap d'Ail, Cap d'Ail, France"
@@ -1054,6 +1082,48 @@ document.getElementById("hours-list").addEventListener("click",function(e){
     renderHours();
   }
 });
+
+// ── MENU WAZE PORTS ──────────────────────────────────────────
+(function(){
+  var menuEl    = document.getElementById("waze-menu");
+  var overlay   = document.getElementById("waze-menu-overlay");
+  var bodyEl    = document.getElementById("waze-menu-body");
+  var anchorBtn = document.getElementById("anchor-btn");
+
+  // Construit le menu à partir de PORTS_BY_CITY
+  var html = "";
+  PORTS_BY_CITY.forEach(function(grp){
+    html += "<div class='waze-menu-city'>" + esc(grp.city) + "</div>";
+    grp.ports.forEach(function(p){
+      var href  = "https://waze.com/ul?q=" + encodeURIComponent(p) + "&navigate=yes";
+      var label = p.split(",")[0]; // Nom du port sans la ville
+      html += "<a class='waze-port-link' href='" + href + "' target='_blank' rel='noopener'>"
+            + "<span class='waze-port-icon'>&#128663;</span>"
+            + esc(label)
+            + "</a>";
+    });
+  });
+  bodyEl.innerHTML = html;
+
+  function openMenu(){
+    menuEl.style.display = "block";
+    overlay.classList.add("open");
+  }
+  function closeMenu(){
+    menuEl.style.display = "none";
+    overlay.classList.remove("open");
+  }
+
+  anchorBtn.addEventListener("click", function(e){
+    e.stopPropagation();
+    if(menuEl.style.display === "none") openMenu(); else closeMenu();
+  });
+  overlay.addEventListener("click", closeMenu);
+  document.getElementById("waze-menu-close").addEventListener("click", closeMenu);
+  bodyEl.addEventListener("click", function(e){
+    if(e.target.closest(".waze-port-link")) setTimeout(closeMenu, 300);
+  });
+})();
 
 fetchClients();
 setInterval(function(){if(!pending)fetchClients();},3600000); // 1 heure

@@ -45,9 +45,11 @@
     .day-item{border-radius:9px;padding:6px 8px;font-size:11px;}
     .day-item.dc{background:#fff3e0;border:1px solid #ffcc80;}
     .day-item.dl{background:#e3f2fd;border:1px solid #90caf9;}
+    .day-item.dt{background:#e8f5e9;border:1.5px solid #66bb6a;}
     .day-item.dc.ok-traitement{background:#f0faf0;border:1.5px solid #66bb6a;}
     .day-item .di-time{font-weight:800;font-size:11px;}
     .day-item.dc .di-time{color:var(--or);}.day-item.dl .di-time{color:var(--bl);}
+    .day-item.dt .di-time{color:var(--gn);}
     .day-item.dc.ok-traitement .di-time{color:var(--gn);}
     .ok-badge{margin-left:4px;font-size:10px;color:var(--gn);font-weight:900;}
     .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
@@ -180,7 +182,7 @@
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
     /* ── MENU ANCRE WAZE ── */
-    .anchor-btn{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom) + 58px + 12px);right:20px;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#33ccff,#0099cc);color:#fff;font-size:20px;border:none;box-shadow:0 4px 14px rgba(0,153,204,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .15s;}
+    .anchor-btn{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom) + 58px + 12px);right:20px;width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#33ccff,#0099cc);color:#fff;font-size:22px;border:none;box-shadow:0 4px 14px rgba(0,153,204,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .15s;filter:drop-shadow(0 0 0 #fff);}
     .anchor-btn:active{transform:scale(.92);}
     .waze-menu-overlay{position:fixed;inset:0;z-index:180;display:none;}
     .waze-menu-overlay.open{display:block;}
@@ -690,9 +692,11 @@ function renderPlanning(){
         var isOkCollecte = type==="collecte" && c.status==="traitement";
         var isOkLivraison = type==="livraison" && c.status==="termine";
         var isOk = isOkCollecte || isOkLivraison;
+        var isTermine = c.status==="termine";
         var okClass=isOk?" ok-traitement":"";
         var okBadge=isOk?"<span class='ok-badge'>✓ OK</span>":"";
-        html+="<div class='day-item "+(type==="collecte"?"dc":"dl")+okClass+"'>"
+        var itemClass = isTermine ? "dt" : (type==="collecte" ? "dc" : "dl");
+        html+="<div class='day-item "+itemClass+okClass+"'>"
           +"<div class='di-row'><span class='di-time'>"+icon+" "+(it.time||"--:--")+okBadge+"</span>"
           +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank'>&#8599;</a>":"")
           +"</div><div class='di-name'>"+esc(c.name)+"</div></div>";

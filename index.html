@@ -36,7 +36,7 @@
     .pnav-today:active{background:var(--navy);color:#fff;}
     .week-grid{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;}
     .week-grid::-webkit-scrollbar{display:none;}
-    .day-col{flex:1 1 calc(50% - 4px);min-width:0;border-radius:12px;background:#f8f9ff;border:1.5px solid #e8eaf6;overflow:hidden;}
+    .day-col{flex:1 1 100%;min-width:0;border-radius:12px;background:#f8f9ff;border:1.5px solid #e8eaf6;overflow:hidden;}
     .day-col.is-today{border-color:var(--navy);background:#eef1ff;}
     .day-head{padding:7px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#789;border-bottom:1px solid #e8eaf6;display:flex;justify-content:space-between;align-items:center;}
     .day-col.is-today .day-head{color:var(--navy);}
@@ -55,6 +55,7 @@
     .ok-badge{margin-left:2px;font-size:9px;color:var(--gn);font-weight:900;}
     .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;flex:1;min-width:0;}
     .di-num{font-size:9px;font-weight:800;color:#aaa;flex-shrink:0;white-space:nowrap;}
+    .di-city{font-size:9px;font-weight:600;color:#789;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;}
     .di-waze{flex-shrink:0;width:18px;height:18px;border-radius:5px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;text-decoration:none;}
     .day-item .di-row{display:none;}
     .day-item .di-name{margin-top:0;}
@@ -668,20 +669,15 @@ function renderPlanning(){
   var todayStr=todayISO();
   var rangeStart=getRangeStart(dayOffset);
   var days=[];
-  for(var i=0;i<2;i++){
+  for(var i=0;i<1;i++){
     var d=new Date(rangeStart);
     d.setDate(rangeStart.getDate()+i);
     days.push(d);
   }
 
-  // Label période (ex: "Lun 23 - Mar 24 juin")
-  var first=days[0], last=days[1];
-  var label;
-  if(first.getMonth()===last.getMonth()){
-    label=DAY_NAMES[first.getDay()]+" "+first.getDate()+" — "+DAY_NAMES[last.getDay()]+" "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
-  } else {
-    label=DAY_NAMES[first.getDay()]+" "+first.getDate()+" "+MONTH_NAMES[first.getMonth()]+" — "+DAY_NAMES[last.getDay()]+" "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
-  }
+  // Label : jour unique
+  var first=days[0];
+  var label=DAY_NAMES[first.getDay()]+" "+first.getDate()+" "+MONTH_NAMES[first.getMonth()];
   document.getElementById("pnav-label").textContent=label;
   document.getElementById("pnav-prev").disabled = dayOffset<=0;
   document.getElementById("pnav-prev").style.opacity = dayOffset<=0?"0.35":"1";
@@ -715,6 +711,11 @@ function renderPlanning(){
         var c=it.c; var type=it.type;
         var relevantAddr=type==="collecte"?(c.collectAddress||c.address||""):(c.deliverAddress||c.address||"");
         var waze=relevantAddr?wazeHref(relevantAddr):null;
+        // Extraire la ville : dernier bout après la dernière virgule
+        var cityParts=relevantAddr.split(",");
+        var city=cityParts.length>1?cityParts[cityParts.length-1].trim():"";
+        // Si le dernier segment contient un code postal, prendre juste les mots non numériques
+        city=city.replace(/^\d+\s*/,"").trim();
         var icon=type==="collecte"?"&#128230;":"&#128666;";
         var isOkCollecte = type==="collecte" && c.status==="traitement";
         var isOkLivraison = type==="livraison" && c.status==="termine";
@@ -729,6 +730,7 @@ function renderPlanning(){
         html+="<div class='day-item "+itemClass+okClass+alerteClass+"' data-cardid='"+esc(c.id)+"'>"
           +"<span class='di-time'>"+icon+" "+(it.time||"--:--")+okBadge+"</span>"
           +"<span class='di-name'>"+esc(c.name)+"</span>"
+          +(city?"<span class='di-city'>"+esc(city)+"</span>":"")
           +"<span class='di-num'>N°"+(c.num||"?")+"</span>"
           +alerteBadge+infoPlanBadge
           +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank' onclick='event.stopPropagation()'>&#8599;</a>":"")

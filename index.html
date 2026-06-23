@@ -36,25 +36,27 @@
     .pnav-today:active{background:var(--navy);color:#fff;}
     .week-grid{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;}
     .week-grid::-webkit-scrollbar{display:none;}
-    .day-col{flex-shrink:0;width:150px;border-radius:12px;background:#f8f9ff;border:1.5px solid #e8eaf6;overflow:hidden;}
+    .day-col{flex:1 1 calc(50% - 4px);min-width:0;border-radius:12px;background:#f8f9ff;border:1.5px solid #e8eaf6;overflow:hidden;}
     .day-col.is-today{border-color:var(--navy);background:#eef1ff;}
-    .day-head{padding:7px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#789;border-bottom:1px solid #e8eaf6;display:flex;justify-content:space-between;align-items:center;}
+    .day-head{padding:8px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#789;border-bottom:1px solid #e8eaf6;display:flex;justify-content:space-between;align-items:center;}
     .day-col.is-today .day-head{color:var(--navy);}
-    .day-body{padding:6px;display:flex;flex-direction:column;gap:6px;min-height:40px;}
-    .day-empty{font-size:10px;color:#bbb;text-align:center;padding:8px 0;}
-    .day-item{border-radius:9px;padding:6px 8px;font-size:11px;}
+    .day-body{padding:8px;display:flex;flex-direction:column;gap:8px;min-height:40px;}
+    .day-empty{font-size:11px;color:#bbb;text-align:center;padding:10px 0;}
+    .day-item{border-radius:10px;padding:8px 10px;font-size:12px;}
     .day-item.dc{background:#fff3e0;border:1px solid #ffcc80;}
     .day-item.dl{background:#e3f2fd;border:1px solid #90caf9;}
     .day-item.dt{background:#e8f5e9;border:1.5px solid #66bb6a;}
     .day-item.dc.ok-traitement{background:#f0faf0;border:1.5px solid #66bb6a;}
-    .day-item .di-time{font-weight:800;font-size:11px;}
+    .day-item .di-time{font-weight:800;font-size:12px;}
     .day-item.dc .di-time{color:var(--or);}.day-item.dl .di-time{color:var(--bl);}
     .day-item.dt .di-time{color:var(--gn);}
     .day-item.dc.ok-traitement .di-time{color:var(--gn);}
     .ok-badge{margin-left:4px;font-size:10px;color:var(--gn);font-weight:900;}
-    .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
-    .day-item .di-row{display:flex;align-items:center;justify-content:space-between;gap:4px;}
-    .di-waze{flex-shrink:0;width:20px;height:20px;border-radius:6px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;text-decoration:none;}
+    .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;font-size:13px;}
+    .day-item .di-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+    .day-item .di-meta{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px;}
+    .di-num{font-size:10px;font-weight:800;color:#aaa;}
+    .di-waze{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;text-decoration:none;}
     .plan-empty{font-size:13px;color:#bbb;text-align:center;padding:6px 0;}
     .plan-scroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
     .plan-scroll::-webkit-scrollbar{display:none;}
@@ -664,19 +666,19 @@ function renderPlanning(){
   var todayStr=todayISO();
   var rangeStart=getRangeStart(dayOffset);
   var days=[];
-  for(var i=0;i<7;i++){
+  for(var i=0;i<2;i++){
     var d=new Date(rangeStart);
     d.setDate(rangeStart.getDate()+i);
     days.push(d);
   }
 
-  // Label période (ex: "18 - 24 juin" ou "Aujourd'hui - 7 jours")
-  var first=days[0], last=days[6];
+  // Label période (ex: "Lun 23 - Mar 24 juin")
+  var first=days[0], last=days[1];
   var label;
   if(first.getMonth()===last.getMonth()){
-    label=first.getDate()+" - "+last.getDate()+" "+MONTH_NAMES[first.getMonth()];
+    label=DAY_NAMES[first.getDay()]+" "+first.getDate()+" — "+DAY_NAMES[last.getDay()]+" "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
   } else {
-    label=first.getDate()+" "+MONTH_NAMES[first.getMonth()]+" - "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
+    label=DAY_NAMES[first.getDay()]+" "+first.getDate()+" "+MONTH_NAMES[first.getMonth()]+" — "+DAY_NAMES[last.getDay()]+" "+last.getDate()+" "+MONTH_NAMES[last.getMonth()];
   }
   document.getElementById("pnav-label").textContent=label;
   document.getElementById("pnav-prev").disabled = dayOffset<=0;
@@ -723,10 +725,16 @@ function renderPlanning(){
         var infoPlanBadge=c.comment?"<span class='di-info'>i</span>":"";
         var itemClass = isTermine ? "dt" : (type==="collecte" ? "dc" : "dl");
         html+="<div class='day-item "+itemClass+okClass+alerteClass+"'>"
-          +"<div class='di-row'><span class='di-time'>"+icon+" "+(it.time||"--:--")+okBadge+"</span>"
-          +"<div style='display:flex;gap:3px;align-items:center'>"+alerteBadge+infoPlanBadge
-          +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank'>&#8599;</a>":"")
-          +"</div></div><div class='di-name'>"+esc(c.name)+"</div></div>";
+          +"<div class='di-row'>"
+            +"<span class='di-time'>"+icon+" "+(it.time||"--:--")+okBadge+"</span>"
+            +"<div style='display:flex;gap:3px;align-items:center'>"+alerteBadge+infoPlanBadge+"</div>"
+          +"</div>"
+          +"<div class='di-name'>"+esc(c.name)+"</div>"
+          +"<div class='di-meta'>"
+            +"<span class='di-num'>N°"+(c.num||"?")+"</span>"
+            +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank'>&#8599;</a>":"<span></span>")
+          +"</div>"
+          +"</div>";
       });
     }
     html+="</div></div>";

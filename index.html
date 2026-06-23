@@ -797,15 +797,20 @@ document.getElementById("cards").addEventListener("click",function(e){
   if(btn.dataset.a==="status"){c.status=btn.dataset.v;render();pushClients();toast("Statut → "+btn.dataset.v);}
 });
 
-// ── LONG PRESS → toggle alerte ──────────────────────────────
+// ── LONG PRESS (alerte) + DOUBLE TAP/CLIC (modifier) ───────
 (function(){
   var pressTimer=null;
-  var DELAY=600; // ms
+  var LONG=600;      // ms pour déclencher l'alerte
+  var DBL=350;       // ms max entre deux taps pour un double-tap
+  var lastTap=0;
+  var longFired=false;
 
   function startPress(e){
     var card=e.target.closest(".card");
     if(!card||e.target.closest(".card-actions")||e.target.closest("a"))return;
+    longFired=false;
     pressTimer=setTimeout(function(){
+      longFired=true;
       pressTimer=null;
       var c=clients.find(function(x){return x.id===card.dataset.id;});
       if(!c)return;
@@ -813,19 +818,41 @@ document.getElementById("cards").addEventListener("click",function(e){
       render();pushClients();
       toast(c.alerte?"⚠️ Alerte activée — appui long pour annuler":"✅ Alerte retirée");
       if(navigator.vibrate)navigator.vibrate(c.alerte?[40,30,80]:40);
-    },DELAY);
+    },LONG);
   }
-  function cancelPress(){if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}}
+
+  function cancelPress(){
+    if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}
+  }
+
+  // Double-tap (touch) → ouvrir modal
+  function onTouchEnd(e){
+    cancelPress();
+    if(longFired)return; // long press vient de se déclencher, ignorer
+    var card=e.target.closest(".card");
+    if(!card||e.target.closest(".card-actions")||e.target.closest("a"))return;
+    var now=Date.now();
+    if(now-lastTap<DBL){
+      lastTap=0;
+      var c=clients.find(function(x){return x.id===card.dataset.id;});
+      if(c)openModal(c);
+    } else {
+      lastTap=now;
+    }
+  }
 
   var el=document.getElementById("cards");
+  // Touch
   el.addEventListener("touchstart",startPress,{passive:true});
-  el.addEventListener("touchend",cancelPress);
+  el.addEventListener("touchend",onTouchEnd);
   el.addEventListener("touchmove",cancelPress);
+  // Mouse (desktop)
   el.addEventListener("mousedown",startPress);
   el.addEventListener("mouseup",cancelPress);
   el.addEventListener("mouseleave",cancelPress);
 })();
 
+// Double-clic souris (desktop) → ouvrir modal
 document.getElementById("cards").addEventListener("dblclick",function(e){
   if(e.target.closest(".card-actions"))return;
   var card=e.target.closest(".card");if(!card)return;

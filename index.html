@@ -52,7 +52,8 @@
     .day-item.dc .di-time{color:var(--or);}.day-item.dl .di-time{color:var(--bl);}
     .day-item.dt .di-time{color:var(--gn);}
     .day-item.dc.ok-traitement .di-time{color:var(--gn);}
-    .ok-badge{margin-left:2px;font-size:9px;color:var(--gn);font-weight:900;}
+    .ok-badge{display:none;}
+    .di-okdot{width:8px;height:8px;border-radius:50%;background:#43a047;flex-shrink:0;display:inline-block;}
     .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;flex:1;min-width:0;text-align:center;}
     .di-num{font-size:9px;font-weight:800;color:#aaa;flex-shrink:0;white-space:nowrap;}
     .di-city{font-size:9px;font-weight:600;color:#789;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;}
@@ -728,11 +729,12 @@ function renderPlanning(){
         var infoPlanBadge=c.comment?"<span class='di-info'>i</span>":"";
         var itemClass = isTermine ? "dt" : (type==="collecte" ? "dc" : "dl");
         html+="<div class='day-item "+itemClass+okClass+alerteClass+"' data-cardid='"+esc(c.id)+"'>"
-          +"<span class='di-time'>"+icon+" "+(it.time||"--:--")+okBadge+"</span>"
+          +"<span class='di-time'>"+icon+" "+(it.time||"--:--")+"</span>"
           +"<span class='di-name'>"+esc(c.name)+"</span>"
-          +(city?"<span class='di-city'>"+esc(city)+"</span>":"")
-          +"<span class='di-num'>N°"+(c.num||"?")+"</span>"
+          +(isOk?"<span class='di-okdot'></span>":"")
           +alerteBadge+infoPlanBadge
+          +"<span class='di-num'>N°"+(c.num||"?")+"</span>"
+          +(city?"<span class='di-city'>"+esc(city)+"</span>":"")
           +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank' onclick='event.stopPropagation()'>&#8599;</a>":"")
           +"</div>";
       });

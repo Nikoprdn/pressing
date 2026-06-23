@@ -54,7 +54,7 @@
     .day-item.dc.ok-traitement .di-time{color:var(--gn);}
     .ok-badge{display:none;}
     .di-okdot{width:8px;height:8px;border-radius:50%;background:#43a047;flex-shrink:0;display:inline-block;}
-    .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;text-align:center;}
+    .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;text-align:center;display:flex;align-items:center;justify-content:center;gap:4px;}
     .di-num{font-size:9px;font-weight:800;color:#aaa;flex-shrink:0;white-space:nowrap;}
     .di-right{display:flex;align-items:center;gap:3px;justify-content:flex-end;}
     .di-waze{flex-shrink:0;width:18px;height:18px;border-radius:5px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;text-decoration:none;}
@@ -730,9 +730,8 @@ function renderPlanning(){
         var itemClass = isTermine ? "dt" : (type==="collecte" ? "dc" : "dl");
         html+="<div class='day-item "+itemClass+okClass+alerteClass+"' data-cardid='"+esc(c.id)+"'>"
           +"<span class='di-time'>"+icon+" "+(it.time||"--:--")+"</span>"
-          +"<span class='di-name'>"+esc(c.name)+"</span>"
+          +"<span class='di-name'>"+esc(c.name)+(isOk?"<span class='di-okdot'></span>":"")+"</span>"
           +"<div class='di-right'>"
-            +(isOk?"<span class='di-okdot'></span>":"")
             +alerteBadge+infoPlanBadge
             +"<span class='di-num'>N°"+(c.num||"?")+"</span>"
             +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank' onclick='event.stopPropagation()'>&#8599;</a>":"")

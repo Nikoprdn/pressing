@@ -97,7 +97,16 @@
     .sbtn.abc{background:var(--or);color:#fff;}.sbtn.abv{background:var(--vi);color:#fff;}.sbtn.abl{background:var(--bl);color:#fff;}.sbtn.abt{background:var(--gn);color:#fff;}
     .ibtn{width:44px;height:44px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
     .ibtn.ed{background:#f3f4f6;color:#3949ab;}.ibtn.dl{background:#fef2f2;color:#c62828;}
+    .ibtn.alert-btn{background:#fff3e0;color:#e65100;transition:background .15s,transform .15s;}
+    .ibtn.alert-btn.active{background:#e65100;color:#fff;}
     .ibtn:active{transform:scale(.92);}
+    .card.alerte{border-left-color:#e53935!important;background:#fff8f8;}
+    .card.alerte .cname{color:#b71c1c;}
+    .info-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1565c0;color:#fff;font-size:9px;font-weight:900;flex-shrink:0;}
+    .di-info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#1565c0;color:#fff;font-size:8px;font-weight:900;flex-shrink:0;}
+    .day-item.alerte{background:#ffebee!important;border-color:#ef9a9a!important;}
+    .day-item.alerte .di-time{color:#c62828!important;}
+    .di-alert{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#e53935;color:#fff;font-size:8px;font-weight:900;flex-shrink:0;}
     #empty{text-align:center;padding:60px 20px;color:#aaa;}
     .eico{font-size:48px;margin-bottom:16px;}
     .fab{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:20px;width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,var(--navy),#3949ab);color:#fff;font-size:22px;border:none;box-shadow:0 4px 18px rgba(29,58,95,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .15s;}
@@ -374,6 +383,8 @@
           <option value="termine">&#10003; Termin&#233;</option>
         </select>
       </div>
+
+      <div><label class="flbl">&#128172; Commentaires (optionnel)</label><textarea class="finp" id="fcomment" rows="3" placeholder="Notes, remarques, points d&#39;attention…" style="resize:vertical;min-height:72px;line-height:1.5"></textarea></div>
     </div>
     <div class="mfoot">
       <button class="btn-save" id="fsave">&#10003; Enregistrer</button>
@@ -708,12 +719,16 @@ function renderPlanning(){
         var isOk = isOkCollecte || isOkLivraison;
         var isTermine = c.status==="termine";
         var okClass=isOk?" ok-traitement":"";
+        var alerteClass=c.alerte?" alerte":"";
         var okBadge=isOk?"<span class='ok-badge'>✓ OK</span>":"";
+        var alerteBadge=c.alerte?"<span class='di-alert'>!</span>":"";
+        var infoPlanBadge=c.comment?"<span class='di-info'>i</span>":"";
         var itemClass = isTermine ? "dt" : (type==="collecte" ? "dc" : "dl");
-        html+="<div class='day-item "+itemClass+okClass+"'>"
+        html+="<div class='day-item "+itemClass+okClass+alerteClass+"'>"
           +"<div class='di-row'><span class='di-time'>"+icon+" "+(it.time||"--:--")+okBadge+"</span>"
+          +"<div style='display:flex;gap:3px;align-items:center'>"+alerteBadge+infoPlanBadge
           +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank'>&#8599;</a>":"")
-          +"</div><div class='di-name'>"+esc(c.name)+"</div></div>";
+          +"</div></div><div class='di-name'>"+esc(c.name)+"</div></div>";
       });
     }
     html+="</div></div>";
@@ -726,7 +741,7 @@ function renderPlanning(){
 function buildCard(c){
   var div=document.createElement("div");
   var statusClassMap={collecte:"sc",traitement:"sv",livraison:"sl",termine:"st"};
-  div.className="card "+(statusClassMap[c.status]||"sc");
+  div.className="card "+(statusClassMap[c.status]||"sc")+(c.alerte?" alerte":"");
   div.dataset.id=c.id;
   var badgeClassMap={collecte:"bc",traitement:"bv",livraison:"bl",termine:"bt"};
   var bcls=badgeClassMap[c.status]||"bc";
@@ -756,10 +771,18 @@ function buildCard(c){
 
   var bagsLine=(c.bags&&c.bags>0)?"<div class='cbags'>&#128717; "+c.bags+" sac"+(c.bags>1?"s":"")+"</div>":"";
   var acBc=c.status==="collecte"?" abc":"";var acBv=c.status==="traitement"?" abv":"";var acBl=c.status==="livraison"?" abl":"";var acBt=c.status==="termine"?" abt":"";
-  div.innerHTML="<div class='card-head'><div><div class='cname'>"+esc(c.name)+"</div>"+bagsLine+"</div>"
-    +"<div style='display:flex;align-items:center;gap:8px'>"
+  var commentLine=c.comment?"<div style='padding:0 14px 10px;font-size:12px;color:#555;border-left:3px solid #1565c0;margin:0 14px 0;background:#e3f2fd;border-radius:0 6px 6px 0;line-height:1.5;padding:6px 10px 6px 10px;'>&#128172; "+esc(c.comment)+"</div>":"";
+  var infoBadge=c.comment?"<span class='info-badge' title='Commentaire'>i</span>":"";
+  var alertBadge=c.alerte?"<span style='font-size:12px' title='Alerte'>&#9888;&#65039;</span>":"";
+  div.innerHTML="<div class='card-head'><div style='display:flex;align-items:center;gap:8px'>"
+    +"<div><div class='cname'>"+esc(c.name)+"</div>"+bagsLine+"</div>"
+    +infoBadge+alertBadge+"</div>"
+    +"<div style='display:flex;align-items:center;gap:6px'>"
     +"<span style='font-size:10px;font-weight:800;color:#aaa;white-space:nowrap'>N°"+(c.num||"?")+"</span>"
-    +"<span class='sbadge "+bcls+"'>"+slbl+"</span></div></div>"
+    +"<span class='sbadge "+bcls+"'>"+slbl+"</span>"
+    +"<button class='ibtn alert-btn"+(c.alerte?" active":"")+"' data-a='alerte' title='Marquer comme problématique'>&#9888;&#65039;</button>"
+    +"</div></div>"
+    +commentLine
     +addrRow
     +"<div class='card-dates'><div class='dchip"+(coOv?" ov":"")+"'>&#128197; Collecte : "+fmtDateTime(c.collectDate,c.collectTime)+"</div>"
     +"<div class='dchip"+(deOv?" ov":"")+"'>&#10003; Livraison : "+fmtDateTime(c.deliverDate,c.deliverTime)+"</div></div>"
@@ -775,6 +798,7 @@ document.getElementById("cards").addEventListener("click",function(e){
   var id=btn.closest(".card").dataset.id;
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
   if(btn.dataset.a==="status"){c.status=btn.dataset.v;render();pushClients();toast("Statut → "+btn.dataset.v);}
+  if(btn.dataset.a==="alerte"){c.alerte=!c.alerte;render();pushClients();toast(c.alerte?"⚠️ Alerte activée":"Alerte désactivée");}
 });
 
 document.getElementById("cards").addEventListener("dblclick",function(e){
@@ -815,6 +839,7 @@ function openModal(c){
   document.getElementById("fdel").value=c?(c.deliverDate||""):"";
   document.getElementById("fdelh").value=c?(c.deliverTime||""):"";
   document.getElementById("fstat").value=c?c.status:"collecte";
+  document.getElementById("fcomment").value=c?(c.comment||""):"";
   document.getElementById("fname").classList.remove("err");
   document.getElementById("mtitle").textContent=c?"Modifier le client":"Nouveau client";
   document.getElementById("fdelete").style.display=c?"block":"none";
@@ -847,7 +872,7 @@ document.getElementById("fsave").addEventListener("click",function(){
   var collectAddress=document.getElementById("faddr-collect").value.trim();
   var linked=document.getElementById("link-addresses").checked;
   var deliverAddress=linked?collectAddress:document.getElementById("faddr-deliver").value.trim();
-  var data={name:name,collectAddress:collectAddress,deliverAddress:deliverAddress,address:collectAddress,bags:parseInt(document.getElementById("fbags").value,10)||0,collectDate:document.getElementById("fcol").value,collectTime:document.getElementById("fcolh").value,deliverDate:document.getElementById("fdel").value,deliverTime:document.getElementById("fdelh").value,status:document.getElementById("fstat").value};
+  var data={name:name,collectAddress:collectAddress,deliverAddress:deliverAddress,address:collectAddress,bags:parseInt(document.getElementById("fbags").value,10)||0,collectDate:document.getElementById("fcol").value,collectTime:document.getElementById("fcolh").value,deliverDate:document.getElementById("fdel").value,deliverTime:document.getElementById("fdelh").value,status:document.getElementById("fstat").value,comment:document.getElementById("fcomment").value.trim()};
   if(id){var idx=clients.findIndex(function(c){return c.id===id;});if(idx!==-1)clients[idx]=Object.assign({},clients[idx],data);toast("Mis à jour ✔");}
   else{data.id=uid();data.num=clients.length+1;clients.push(data);toast("Client ajouté ✔ · N°"+data.num);}
   render();pushClients();closeModal();

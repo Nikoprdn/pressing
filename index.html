@@ -42,7 +42,7 @@
     .day-col.is-today .day-head{color:var(--navy);}
     .day-body{padding:6px;display:flex;flex-direction:column;gap:6px;min-height:40px;}
     .day-empty{font-size:10px;color:#bbb;text-align:center;padding:8px 0;}
-    .day-item{border-radius:8px;padding:5px 7px;font-size:11px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;gap:5px;}
+    .day-item{border-radius:8px;padding:5px 7px;font-size:11px;cursor:pointer;transition:opacity .15s;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px;}
     .day-item:active{opacity:.7;}
     .day-item.dc{background:#fff3e0;border:1px solid #ffcc80;}
     .day-item.dl{background:#e3f2fd;border:1px solid #90caf9;}
@@ -54,9 +54,9 @@
     .day-item.dc.ok-traitement .di-time{color:var(--gn);}
     .ok-badge{display:none;}
     .di-okdot{width:8px;height:8px;border-radius:50%;background:#43a047;flex-shrink:0;display:inline-block;}
-    .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;flex:1;min-width:0;text-align:center;}
+    .day-item .di-name{font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;text-align:center;}
     .di-num{font-size:9px;font-weight:800;color:#aaa;flex-shrink:0;white-space:nowrap;}
-    .di-city{font-size:9px;font-weight:600;color:#789;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;}
+    .di-right{display:flex;align-items:center;gap:3px;justify-content:flex-end;}
     .di-waze{flex-shrink:0;width:18px;height:18px;border-radius:5px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;text-decoration:none;}
     .day-item .di-row{display:none;}
     .day-item .di-name{margin-top:0;}
@@ -731,11 +731,12 @@ function renderPlanning(){
         html+="<div class='day-item "+itemClass+okClass+alerteClass+"' data-cardid='"+esc(c.id)+"'>"
           +"<span class='di-time'>"+icon+" "+(it.time||"--:--")+"</span>"
           +"<span class='di-name'>"+esc(c.name)+"</span>"
-          +(isOk?"<span class='di-okdot'></span>":"")
-          +alerteBadge+infoPlanBadge
-          +"<span class='di-num'>N°"+(c.num||"?")+"</span>"
-          +(city?"<span class='di-city'>"+esc(city)+"</span>":"")
-          +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank' onclick='event.stopPropagation()'>&#8599;</a>":"")
+          +"<div class='di-right'>"
+            +(isOk?"<span class='di-okdot'></span>":"")
+            +alerteBadge+infoPlanBadge
+            +"<span class='di-num'>N°"+(c.num||"?")+"</span>"
+            +(waze?"<a class='di-waze' href='"+esc(waze)+"' target='_blank' onclick='event.stopPropagation()'>&#8599;</a>":"")
+          +"</div>"
           +"</div>";
       });
     }

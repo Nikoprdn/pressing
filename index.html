@@ -781,6 +781,7 @@ function buildCard(c){
   }
 
   var bagsLine=(c.bags&&c.bags>0)?"<div class='cbags'>&#128717; "+c.bags+" sac"+(c.bags>1?"s":"")+"</div>":"";
+  var acBc=c.status==="collecte"?" abc":"";var acBv=c.status==="traitement"?" abv":"";var acBl=c.status==="livraison"?" abl":"";var acBt=c.status==="termine"?" abt":"";
   var waPhone=c.phone?c.phone.replace(/\s+/g,""):"";
   var waBtn=waPhone?"<a href='https://wa.me/"+esc(waPhone.replace(/^\+/,""))+"' target='_blank' class='ibtn wa' style='text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:14px;' title='WhatsApp'>&#128172;</a>":"";
   var commentLine=c.comment?"<div style='padding:0 14px 10px;font-size:12px;color:#555;border-left:3px solid #1565c0;margin:0 14px 0;background:#e3f2fd;border-radius:0 6px 6px 0;line-height:1.5;padding:6px 10px 6px 10px;'>&#128172; "+esc(c.comment)+"</div>":"";

@@ -594,17 +594,26 @@ var lastKnownBackupTime=null;
 function backupToSheet(){
   if(!BACKUP_URL) return;
   try{
-    fetch(BACKUP_URL, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({clients:clients})
-    })
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data && data.lastSaveAt) lastKnownBackupTime=data.lastSaveAt;
-    })
-    .catch(function(){/* silencieux */});
-  }catch(e){/* silencieux : le backup ne doit jamais bloquer l'app */}
+    // GAS ne supporte pas les POST cross-origin — on envoie via une iframe cachée + form GET
+    var payload=JSON.stringify({clients:clients});
+    // Découper en chunks si trop long (limite URL ~7500 chars)
+    var CHUNK=7000;
+    var chunks=[];
+    for(var i=0;i<payload.length;i+=CHUNK) chunks.push(payload.slice(i,i+CHUNK));
+    var total=chunks.length;
+    var batchId=Date.now().toString(36);
+    chunks.forEach(function(chunk,idx){
+      var url=BACKUP_URL
+        +"?payload="+encodeURIComponent(chunk)
+        +"&batch="+encodeURIComponent(batchId)
+        +"&chunk="+idx
+        +"&total="+total
+        +"&_t="+Date.now();
+      var img=new Image();
+      img.src=url;
+    });
+    setTimeout(checkBackupStatus,5000);
+  }catch(e){/* silencieux */}
 }
 
 function checkBackupStatus(){

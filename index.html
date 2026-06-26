@@ -825,8 +825,8 @@ document.getElementById("cards").addEventListener("click",function(e){
     var old=document.querySelector(".phone-menu");if(old)old.remove();
     var oldOv=document.querySelector(".phone-menu-overlay");if(oldOv)oldOv.remove();
     var phone=btn.dataset.phone;
-    var clean=phone.replace(/\s+/g,"");
-    var waNum=clean.replace(/^\+/,"");
+    var clean=phone.replace(/[\s\-\.\(\)]/g,"");
+    var waNum=clean.replace(/^\+/,"").replace(/^00/,"");
     var rect=btn.getBoundingClientRect();
     // Overlay
     var ov=document.createElement("div");

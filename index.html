@@ -103,8 +103,15 @@
     .sbtn.abc{background:var(--or);color:#fff;}.sbtn.abv{background:var(--vi);color:#fff;}.sbtn.abl{background:var(--bl);color:#fff;}.sbtn.abt{background:var(--gn);color:#fff;}
     .ibtn{width:44px;height:44px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
     .ibtn.ed{background:#f3f4f6;color:#3949ab;}.ibtn.dl{background:#fef2f2;color:#c62828;}
-    .ibtn.wa{background:#25D366;color:#fff;}
+    .ibtn.phone-btn{background:#25D366;color:#fff;}
     .ibtn:active{transform:scale(.92);}
+    .phone-menu{position:fixed;z-index:300;background:#fff;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.18);overflow:hidden;min-width:180px;animation:su .15s ease;}
+    .phone-menu-item{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;font-weight:700;color:var(--navy);cursor:pointer;border-bottom:1px solid #f0f0f0;text-decoration:none;}
+    .phone-menu-item:last-child{border-bottom:none;}
+    .phone-menu-item:active{background:#f5f5f5;}
+    .phone-menu-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+    .phone-menu-icon.call{background:#e8f5e9;}.phone-menu-icon.wa{background:#e8f5e9;}
+    .phone-menu-overlay{position:fixed;inset:0;z-index:299;}
     .card.alerte{border-left-color:#e53935!important;background:#fff8f8;}
     .card.alerte .cname{color:#b71c1c;}
     .info-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1565c0;color:#fff;font-size:9px;font-weight:900;flex-shrink:0;}
@@ -783,7 +790,9 @@ function buildCard(c){
   var bagsLine=(c.bags&&c.bags>0)?"<div class='cbags'>&#128717; "+c.bags+" sac"+(c.bags>1?"s":"")+"</div>":"";
   var acBc=c.status==="collecte"?" abc":"";var acBv=c.status==="traitement"?" abv":"";var acBl=c.status==="livraison"?" abl":"";var acBt=c.status==="termine"?" abt":"";
   var waPhone=c.phone?c.phone.replace(/\s+/g,""):"";
-  var waBtn=waPhone?"<a href='https://wa.me/"+esc(waPhone.replace(/^\+/,""))+"' target='_blank' class='ibtn wa' style='text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:14px;' title='WhatsApp'>&#128172;</a>":"";
+  var phoneBtn=waPhone
+    ?"<button class='ibtn phone-btn' data-a='phone' data-phone='"+esc(c.phone)+"' title='Contacter'>&#128222;</button>"
+    :"";
   var commentLine=c.comment?"<div style='padding:0 14px 10px;font-size:12px;color:#555;border-left:3px solid #1565c0;margin:0 14px 0;background:#e3f2fd;border-radius:0 6px 6px 0;line-height:1.5;padding:6px 10px 6px 10px;'>&#128172; "+esc(c.comment)+"</div>":"";
   var infoBadge=c.comment?"<span class='info-badge' title='Commentaire'>i</span>":"";
   var alertBadge=c.alerte?"<span style='font-size:12px' title='Alerte'>&#9888;&#65039;</span>":"";
@@ -793,7 +802,7 @@ function buildCard(c){
     +"<div style='display:flex;align-items:center;gap:6px'>"
     +"<span style='font-size:10px;font-weight:800;color:#aaa;white-space:nowrap'>N°"+(c.num||"?")+"</span>"
     +"<span class='sbadge "+bcls+"'>"+slbl+"</span>"
-    +waBtn
+    +phoneBtn
     +"</div></div>"
     +commentLine
     +addrRow
@@ -811,6 +820,38 @@ document.getElementById("cards").addEventListener("click",function(e){
   var id=btn.closest(".card").dataset.id;
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
   if(btn.dataset.a==="status"){c.status=btn.dataset.v;render();pushClients();toast("Statut → "+btn.dataset.v);}
+  if(btn.dataset.a==="phone"){
+    // Fermer un menu éventuellement ouvert
+    var old=document.querySelector(".phone-menu");if(old)old.remove();
+    var oldOv=document.querySelector(".phone-menu-overlay");if(oldOv)oldOv.remove();
+    var phone=btn.dataset.phone;
+    var clean=phone.replace(/\s+/g,"");
+    var waNum=clean.replace(/^\+/,"");
+    var rect=btn.getBoundingClientRect();
+    // Overlay
+    var ov=document.createElement("div");
+    ov.className="phone-menu-overlay";
+    ov.addEventListener("click",function(){menu.remove();ov.remove();});
+    document.body.appendChild(ov);
+    // Menu
+    var menu=document.createElement("div");
+    menu.className="phone-menu";
+    menu.innerHTML="<a class='phone-menu-item' href='tel:"+esc(clean)+"'>"
+      +"<span class='phone-menu-icon call'>&#128222;</span>Appeler</a>"
+      +"<a class='phone-menu-item' href='https://wa.me/"+esc(waNum)+"' target='_blank'>"
+      +"<span class='phone-menu-icon wa'>&#128172;</span>WhatsApp</a>";
+    menu.querySelectorAll("a").forEach(function(a){
+      a.addEventListener("click",function(){setTimeout(function(){menu.remove();ov.remove();},200);});
+    });
+    document.body.appendChild(menu);
+    // Positionner le menu sous le bouton
+    var top=rect.bottom+6;
+    var left=rect.right-180;
+    if(left<8)left=8;
+    if(top+120>window.innerHeight)top=rect.top-120-6;
+    menu.style.top=top+"px";
+    menu.style.left=left+"px";
+  }
 });
 
 // ── LONG PRESS (alerte) + DOUBLE TAP/CLIC (modifier) ───────

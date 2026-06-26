@@ -610,14 +610,16 @@ function backupToSheet(){
       alerte:c.alerte?1:0,
       id:c.id||""
     };});
-    // POST en form-urlencoded : GAS le lit via e.parameter, no-cors OK
-    var body="payload="+encodeURIComponent(JSON.stringify({clients:slim}));
-    fetch(BACKUP_URL,{
-      method:"POST",
-      mode:"no-cors",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:body
-    }).catch(function(){});
+    // Envoi en une seule requête GET avec payload compacté
+    var payload=JSON.stringify({clients:slim});
+    var encoded=encodeURIComponent(payload);
+    // Si trop long, tronquer les commentaires/adresses pour tenir dans l'URL
+    if(encoded.length>6000){
+      slim=slim.map(function(c){return Object.assign({},c,{comment:"",collectAddress:"",deliverAddress:""});});
+      encoded=encodeURIComponent(JSON.stringify({clients:slim}));
+    }
+    var img=new Image();
+    img.src=BACKUP_URL+"?payload="+encoded+"&_t="+Date.now();
     setTimeout(checkBackupStatus,4000);
   }catch(e){ /* silencieux */ }
 }

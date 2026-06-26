@@ -594,7 +594,6 @@ var lastKnownBackupTime=null;
 function backupToSheet(){
   if(!BACKUP_URL) return;
   try{
-    // Payload allégé : seulement les champs utiles pour le sheet
     var slim=clients.map(function(c){return{
       num:c.num||"",
       name:c.name||"",
@@ -612,9 +611,10 @@ function backupToSheet(){
       id:c.id||""
     };});
     var payload=encodeURIComponent(JSON.stringify({clients:slim}));
-    document.getElementById("backup-pixel").src=BACKUP_URL+"?payload="+payload+"&_t="+Date.now();
+    fetch(BACKUP_URL+"?payload="+payload+"&_t="+Date.now(),{mode:"no-cors"})
+      .catch(function(){});
     setTimeout(checkBackupStatus,4000);
-  }catch(e){ /* silencieux : le backup ne doit jamais bloquer l'app */ }
+  }catch(e){ /* silencieux */ }
 }
 
 function checkBackupStatus(){

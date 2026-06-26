@@ -610,9 +610,14 @@ function backupToSheet(){
       alerte:c.alerte?1:0,
       id:c.id||""
     };});
-    var payload=encodeURIComponent(JSON.stringify({clients:slim}));
-    fetch(BACKUP_URL+"?payload="+payload+"&_t="+Date.now(),{mode:"no-cors"})
-      .catch(function(){});
+    // POST en form-urlencoded : GAS le lit via e.parameter, no-cors OK
+    var body="payload="+encodeURIComponent(JSON.stringify({clients:slim}));
+    fetch(BACKUP_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:body
+    }).catch(function(){});
     setTimeout(checkBackupStatus,4000);
   }catch(e){ /* silencieux */ }
 }

@@ -594,26 +594,10 @@ var lastKnownBackupTime=null;
 function backupToSheet(){
   if(!BACKUP_URL) return;
   try{
-    // GAS ne supporte pas les POST cross-origin — on envoie via une iframe cachée + form GET
-    var payload=JSON.stringify({clients:clients});
-    // Découper en chunks si trop long (limite URL ~7500 chars)
-    var CHUNK=7000;
-    var chunks=[];
-    for(var i=0;i<payload.length;i+=CHUNK) chunks.push(payload.slice(i,i+CHUNK));
-    var total=chunks.length;
-    var batchId=Date.now().toString(36);
-    chunks.forEach(function(chunk,idx){
-      var url=BACKUP_URL
-        +"?payload="+encodeURIComponent(chunk)
-        +"&batch="+encodeURIComponent(batchId)
-        +"&chunk="+idx
-        +"&total="+total
-        +"&_t="+Date.now();
-      var img=new Image();
-      img.src=url;
-    });
-    setTimeout(checkBackupStatus,5000);
-  }catch(e){/* silencieux */}
+    var payload=encodeURIComponent(JSON.stringify({clients:clients}));
+    document.getElementById("backup-pixel").src=BACKUP_URL+"?payload="+payload+"&_t="+Date.now();
+    setTimeout(checkBackupStatus,4000);
+  }catch(e){ /* silencieux : le backup ne doit jamais bloquer l'app */ }
 }
 
 function checkBackupStatus(){

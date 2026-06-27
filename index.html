@@ -339,7 +339,7 @@
     <div class="mhead"><h2 id="mtitle">Nouveau client</h2></div>
     <div class="mbody">
       <input type="hidden" id="fid"/>
-      <div><label class="flbl">Nom du client / bateau</label><input class="finp" id="fname" type="text" placeholder="Ex. Le Mistrau, Mme Dupont…" autocomplete="off"/></div>
+      <div><label class="flbl">Nom du client / bateau</label><input class="finp" id="fname" type="text" placeholder="Ex. Le Mistrau, Mme Dupont…" autocomplete="off" list="clients-datalist"/><datalist id="clients-datalist"></datalist></div>
 
       <div><label class="flbl">&#128222; Téléphone WhatsApp (optionnel)</label><input class="finp" id="fphone" type="tel" placeholder="Ex. +33 6 12 34 56 78" autocomplete="tel"/></div>
 
@@ -655,6 +655,7 @@ function render(){
   // date et heure gérées par updateClock(), appelée séparément en continu
   renderPlanning();
   var f;
+  updateClientsDatalist();
   // Numéroter les clients qui n'ont pas encore de numéro (migration)
   clients.forEach(function(c,i){if(!c.num)c.num=i+1;});
 
@@ -1289,7 +1290,36 @@ document.getElementById("hours-list").addEventListener("click",function(e){
   }
 });
 
-// ── MENU WAZE PORTS ──────────────────────────────────────────
+// ── AUTOCOMPLÉTION NOM CLIENT ────────────────────────────────
+function updateClientsDatalist(){
+  var dl=document.getElementById("clients-datalist");
+  if(!dl)return;
+  // Noms uniques triés
+  var names=[];
+  clients.forEach(function(c){if(c.name&&names.indexOf(c.name)<0)names.push(c.name);});
+  names.sort();
+  dl.innerHTML=names.map(function(n){return"<option value='"+esc(n)+"'>";}).join("");
+}
+
+document.getElementById("fname").addEventListener("input",function(){
+  var val=this.value.trim();
+  if(!val)return;
+  // Chercher un client existant avec ce nom exact
+  var match=null;
+  for(var i=clients.length-1;i>=0;i--){
+    if(clients[i].name===val){match=clients[i];break;}
+  }
+  if(!match)return;
+  // Pré-remplir téléphone si vide
+  var fphone=document.getElementById("fphone");
+  if(fphone&&!fphone.value&&match.phone)fphone.value=match.phone;
+  // Pré-remplir adresse collecte si vide
+  var fcol=document.getElementById("faddr-collect");
+  if(fcol&&!fcol.value&&match.collectAddress)fcol.value=match.collectAddress;
+  // Pré-remplir adresse livraison si vide
+  var fdel=document.getElementById("faddr-deliver");
+  if(fdel&&!fdel.value&&match.deliverAddress)fdel.value=match.deliverAddress;
+});
 (function(){
   var menuEl    = document.getElementById("waze-menu");
   var overlay   = document.getElementById("waze-menu-overlay");

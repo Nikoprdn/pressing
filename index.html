@@ -256,7 +256,7 @@
   <div class="spill l"><div class="snum" id="sl">0</div><div class="slbl">Livraisons</div></div>
 </div>
 <div id="cards"></div>
-<div id="empty" style="display:none"><div class="eico">&#128085;</div><p>Aucun client.<br>Appuie sur <strong>+</strong> pour d&#233;marrer.</p></div>
+<div id="empty" style="display:none"><div class="eico">&#128085;</div><p>Aucune commande.<br>Appuie sur <strong>+</strong> pour démarrer.</p></div>
 <button class="fab" id="fab">&#43;</button>
 <button class="clock-tab" id="clock-tab" title=" ">&#128336;</button>
 <button class="anchor-btn" id="anchor-btn" title="Navigation Waze vers les ports">&#9875;</button>
@@ -336,7 +336,7 @@
 <div class="modal-wrap" id="modal">
   <div class="mbg" id="mbg"></div>
   <div class="mcard">
-    <div class="mhead"><h2 id="mtitle">Nouveau client</h2></div>
+    <div class="mhead"><h2 id="mtitle">Nouvelle commande</h2></div>
     <div class="mbody">
       <input type="hidden" id="fid"/>
       <div><label class="flbl">Nom du client / bateau</label><input class="finp" id="fname" type="text" placeholder="Ex. Le Mistrau, Mme Dupont…" autocomplete="off" list="clients-datalist"/><datalist id="clients-datalist"></datalist></div>
@@ -651,7 +651,7 @@ function render(){
   document.getElementById("sv").textContent=counts.traitement;
   document.getElementById("sl").textContent=counts.livraison;
   var activeCount=clients.length-counts.termine;
-  document.getElementById("tc").textContent=activeCount+" client"+(activeCount>1?"s":"")+" en cours";
+  document.getElementById("tc").textContent=activeCount+" commande"+(activeCount>1?"s":"")+" en cours";
   // date et heure gérées par updateClock(), appelée séparément en continu
   renderPlanning();
   var f;
@@ -1002,7 +1002,7 @@ function openModal(c){
   document.getElementById("fstat").value=c?c.status:"collecte";
   document.getElementById("fcomment").value=c?(c.comment||""):"";
   document.getElementById("fname").classList.remove("err");
-  document.getElementById("mtitle").textContent=c?"Modifier le client":"Nouveau client";
+  document.getElementById("mtitle").textContent=c?"Modifier la commande":"Nouvelle commande";
   document.getElementById("fdelete").style.display=c?"block":"none";
   document.getElementById("modal").classList.add("open");
   setTimeout(function(){document.getElementById("fname").focus();},200);
@@ -1035,7 +1035,7 @@ document.getElementById("fsave").addEventListener("click",function(){
   var deliverAddress=linked?collectAddress:document.getElementById("faddr-deliver").value.trim();
   var data={name:name,phone:document.getElementById("fphone").value.trim(),collectAddress:collectAddress,deliverAddress:deliverAddress,address:collectAddress,bags:parseInt(document.getElementById("fbags").value,10)||0,collectDate:document.getElementById("fcol").value,collectTime:document.getElementById("fcolh").value,deliverDate:document.getElementById("fdel").value,deliverTime:document.getElementById("fdelh").value,status:document.getElementById("fstat").value,comment:document.getElementById("fcomment").value.trim()};
   if(id){var idx=clients.findIndex(function(c){return c.id===id;});if(idx!==-1)clients[idx]=Object.assign({},clients[idx],data);toast("Mis à jour ✔");}
-  else{data.id=uid();data.num=clients.length+1;clients.push(data);toast("Client ajouté ✔ · N°"+data.num);}
+  else{data.id=uid();data.num=clients.length+1;clients.push(data);toast("Commande ajoutée ✔ · N°"+data.num);}
   render();pushClients();closeModal();
 });
 

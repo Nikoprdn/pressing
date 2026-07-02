@@ -290,7 +290,6 @@
     .waze-btn:active{opacity:.85;color:#fff;}
     .card-dates{display:flex;gap:7px;padding:0 16px 12px;flex-wrap:wrap;}
     .dchip{font-size:11px;background:var(--mist);color:#4a5b72;padding:6px 11px;border-radius:9px;font-weight:600;}
-    .dchip.ov{background:#fbe9df;color:#b4451a;font-weight:800;}
     .card-actions{border-top:1px solid #eef1f6;display:flex;align-items:center;padding:10px 12px;gap:7px;}
     .sbtn{flex:1;font-size:9.5px;font-weight:800;border:1.5px solid;border-radius:11px;padding:11px 2px;cursor:pointer;background:#fff;text-align:center;transition:.15s;min-height:46px;letter-spacing:.2px;}
     .sbtn.bc2{border-color:#e7d3ab;color:var(--or);}.sbtn.bv2{border-color:#dcccec;color:var(--vi);}.sbtn.bl2{border-color:#c4d9f0;color:var(--bl);}.sbtn.bt2{border-color:#bce0cd;color:var(--gn);}
@@ -641,6 +640,24 @@ syncHeaderOffset();
 // ── PORTS PRÉDÉFINIS ──────────────────────────────────────────
 // Chaque adresse inclut ville + pays pour une géolocalisation Waze fiable
 var PORTS_BY_CITY = [
+  { city:"Antibes", ports:[
+    "Port Vauban, Antibes, France",
+    "Port Gallice, Antibes, France"
+  ]},
+  { city:"Cannes", ports:[
+    "Vieux-Port de Cannes, Cannes, France",
+    "Port Pierre Canto, Cannes, France"
+  ]},
+  { city:"Cap d'Ail", ports:[
+    "Port de Cap d'Ail, Cap d'Ail, France"
+  ]},
+  { city:"Golf-Juan", ports:[
+    "Port Camille Rayon, Golf-Juan, France"
+  ]},
+  { city:"Mandelieu-la-Napoule", ports:[
+    "Port La Napoule, Mandelieu-la-Napoule, France",
+    "Port de la Rague, Mandelieu-la-Napoule, France"
+  ]},
   { city:"Menton", ports:[
     "Port de Garavan, Menton, France",
     "Vieux Port de Menton, Menton, France"
@@ -650,27 +667,12 @@ var PORTS_BY_CITY = [
     "Port de Fontvieille, Monaco",
     "Yacht Club de Monaco, Monaco"
   ]},
-  { city:"Cap d'Ail", ports:[
-    "Port de Cap d'Ail, Cap d'Ail, France"
+  { city:"Nice", ports:[
+    "Port Lympia, Nice, France"
   ]},
   { city:"Villefranche-sur-Mer", ports:[
     "Port de la Darse, Villefranche-sur-Mer, France",
     "Port de la Santé, Villefranche-sur-Mer, France"
-  ]},
-  { city:"Nice", ports:[
-    "Port Lympia, Nice, France"
-  ]},
-  { city:"Antibes", ports:[
-    "Port Vauban, Antibes, France",
-    "Port Gallice, Antibes, France"
-  ]},
-  { city:"Cannes", ports:[
-    "Vieux-Port de Cannes, Cannes, France",
-    "Port Pierre Canto, Cannes, France"
-  ]},
-  { city:"Mandelieu-la-Napoule", ports:[
-    "Port La Napoule, Mandelieu-la-Napoule, France",
-    "Port de la Rague, Mandelieu-la-Napoule, France"
   ]}
 ];
 

@@ -410,6 +410,21 @@
     .waze-port-link:last-child{border-bottom:none;}
     .waze-port-link:active{background:#eefaff;}
     .waze-port-icon{width:32px;height:32px;border-radius:10px;background:var(--waze);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+    .port-link-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .port-code-badge{display:inline-flex;align-items:center;gap:4px;background:#fff8e1;color:#8a6000;font-size:11px;font-weight:800;padding:4px 9px;border-radius:9px;border:1.5px solid #ffe082;white-space:nowrap;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;}
+    /* Modale code barrière */
+    .barrier-overlay{position:fixed;inset:0;z-index:400;background:rgba(10,20,40,.52);display:none;align-items:flex-end;justify-content:center;}
+    .barrier-overlay.open{display:flex;}
+    .barrier-modal{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:24px 20px calc(28px + env(safe-area-inset-bottom));animation:su .25s cubic-bezier(.2,.8,.2,1);}
+    .barrier-modal h4{font-size:15px;font-weight:800;color:var(--navy);margin:0 0 4px;}
+    .bm-portname{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:18px;}
+    .bm-input{width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:14px;padding:13px 16px;font-size:16px;font-weight:700;background:#f7f9fd;color:var(--ink);outline:none;font-family:inherit;letter-spacing:.5px;}
+    .bm-input:focus{border-color:var(--navy);background:#fff;box-shadow:0 0 0 3px rgba(22,49,80,.1);}
+    .bm-hint{font-size:11px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.5;}
+    .bm-actions{display:flex;gap:10px;margin-top:18px;}
+    .bm-save{flex:1;background:linear-gradient(140deg,#1d4068,#2a5689);color:#fff;border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;}
+    .bm-delete{background:#fdeced;color:#c0362e;border:1.5px solid #f3c9c5;border-radius:14px;padding:14px 16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;}
+    .bm-cancel{background:#edf1f7;color:var(--navy);border:none;border-radius:14px;padding:14px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
     @media(min-width:480px){#cards,.statsbar,.plan-section{max-width:480px;margin-left:auto;margin-right:auto;}.filters{justify-content:center;}}
   </style>
 </head>
@@ -464,6 +479,21 @@
   <div id="waze-menu-body"></div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- MODALE CODE BARRIÈRE -->
+<div class="barrier-overlay" id="barrier-overlay">
+  <div class="barrier-modal">
+    <h4>🔑 Code de la barrière</h4>
+    <div class="bm-portname" id="bm-portname"></div>
+    <input class="bm-input" id="bm-input" type="text" placeholder="Ex. 1234# ou A*567B" autocomplete="off" inputmode="text">
+    <div class="bm-hint">💡 Appui long sur un port pour modifier ou supprimer son code</div>
+    <div class="bm-actions">
+      <button class="bm-save" id="bm-save">✓ Enregistrer</button>
+      <button class="bm-delete" id="bm-delete" title="Supprimer le code">🗑</button>
+      <button class="bm-cancel" id="bm-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
 
 <img id="backup-pixel" style="display:none" width="1" height="1" alt="">
 
@@ -1524,22 +1554,116 @@ document.getElementById("fname").addEventListener("input",function(){
   var bodyEl    = document.getElementById("waze-menu-body");
   var anchorBtn = document.getElementById("anchor-btn");
 
-  // Construit le menu à partir de PORTS_BY_CITY
-  var html = "";
-  PORTS_BY_CITY.forEach(function(grp){
-    html += "<div class='waze-menu-city'>" + esc(grp.city) + "</div>";
-    grp.ports.forEach(function(p){
-      var href  = "https://waze.com/ul?q=" + encodeURIComponent(p) + "&navigate=yes";
-      var label = p.split(",")[0]; // Nom du port sans la ville
-      html += "<a class='waze-port-link' href='" + href + "' target='_blank' rel='noopener'>"
-            + "<span class='waze-port-icon'>&#128663;</span>"
-            + esc(label)
-            + "</a>";
-    });
-  });
-  bodyEl.innerHTML = html;
+  // ── Stockage des codes de barrière (localStorage) ─────────────
+  function storageKey(port){ return "llf_barrier_" + port; }
+  function getCode(port){ try{ return localStorage.getItem(storageKey(port))||""; }catch(e){ return ""; } }
+  function setCode(port,code){ try{ if(code) localStorage.setItem(storageKey(port),code); else localStorage.removeItem(storageKey(port)); }catch(e){} }
 
+  // ── Construction du menu ───────────────────────────────────────
+  function buildMenu(){
+    var html = "";
+    PORTS_BY_CITY.forEach(function(grp){
+      html += "<div class='waze-menu-city'>" + esc(grp.city) + "</div>";
+      grp.ports.forEach(function(p){
+        var href  = "https://waze.com/ul?q=" + encodeURIComponent(p) + "&navigate=yes";
+        var label = p.split(",")[0];
+        var code  = getCode(p);
+        var badge = code ? "<span class='port-code-badge'>🔑 " + esc(code) + "</span>" : "";
+        html += "<a class='waze-port-link' href='" + esc(href) + "' target='_blank' rel='noopener' data-port='" + esc(p) + "'>"
+              + "<span class='waze-port-icon'>&#128663;</span>"
+              + "<span class='port-link-label'>" + esc(label) + "</span>"
+              + badge
+              + "</a>";
+      });
+    });
+    bodyEl.innerHTML = html;
+    attachLongPress();
+  }
+
+  // ── Détection appui long sur chaque lien port ──────────────────
+  function attachLongPress(){
+    var LONG = 600; // ms
+    bodyEl.querySelectorAll(".waze-port-link").forEach(function(el){
+      var timer = null;
+      var fired = false;
+
+      function startPress(e){
+        fired = false;
+        el.style.background = "#ddf5ff";
+        timer = setTimeout(function(){
+          fired = true;
+          el.style.background = "";
+          if(navigator.vibrate) navigator.vibrate(40);
+          openBarrierModal(el.dataset.port);
+        }, LONG);
+      }
+      function cancelPress(){
+        clearTimeout(timer);
+        el.style.background = "";
+      }
+      function onClick(e){
+        if(fired){ e.preventDefault(); e.stopPropagation(); fired = false; }
+      }
+
+      el.addEventListener("touchstart",  startPress,  {passive:true});
+      el.addEventListener("touchend",    cancelPress);
+      el.addEventListener("touchcancel", cancelPress);
+      el.addEventListener("touchmove",   cancelPress);
+      el.addEventListener("mousedown",   startPress);
+      el.addEventListener("mouseup",     cancelPress);
+      el.addEventListener("mouseleave",  cancelPress);
+      el.addEventListener("click",       onClick);
+    });
+  }
+
+  // ── Modale code barrière ───────────────────────────────────────
+  var barrierOverlay = document.getElementById("barrier-overlay");
+  var bmPortname     = document.getElementById("bm-portname");
+  var bmInput        = document.getElementById("bm-input");
+  var bmSave         = document.getElementById("bm-save");
+  var bmDelete       = document.getElementById("bm-delete");
+  var bmCancel       = document.getElementById("bm-cancel");
+  var currentPort    = null;
+
+  function openBarrierModal(port){
+    currentPort = port;
+    bmPortname.textContent = port.split(",")[0];
+    bmInput.value = getCode(port);
+    barrierOverlay.classList.add("open");
+    setTimeout(function(){ bmInput.focus(); bmInput.select(); }, 200);
+  }
+  function closeBarrierModal(){
+    barrierOverlay.classList.remove("open");
+    currentPort = null;
+  }
+
+  bmSave.addEventListener("click", function(){
+    if(!currentPort) return;
+    var code = bmInput.value.trim();
+    setCode(currentPort, code);
+    closeBarrierModal();
+    buildMenu();
+    toast("🔑 Code enregistré — " + currentPort.split(",")[0]);
+  });
+  bmDelete.addEventListener("click", function(){
+    if(!currentPort) return;
+    setCode(currentPort, "");
+    closeBarrierModal();
+    buildMenu();
+    toast("✅ Code supprimé");
+  });
+  bmCancel.addEventListener("click", closeBarrierModal);
+  barrierOverlay.addEventListener("click", function(e){
+    if(e.target === barrierOverlay) closeBarrierModal();
+  });
+  bmInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter")  { bmSave.click(); }
+    if(e.key === "Escape") { closeBarrierModal(); }
+  });
+
+  // ── Menu ouverture / fermeture ────────────────────────────────
   function openMenu(){
+    buildMenu();
     menuEl.style.display = "block";
     overlay.classList.add("open");
   }
@@ -1555,7 +1679,7 @@ document.getElementById("fname").addEventListener("input",function(){
   overlay.addEventListener("click", closeMenu);
   document.getElementById("waze-menu-close").addEventListener("click", closeMenu);
   bodyEl.addEventListener("click", function(e){
-    if(e.target.closest(".waze-port-link")) setTimeout(closeMenu, 300);
+    if(e.target.closest(".waze-port-link") && !e.defaultPrevented) setTimeout(closeMenu, 300);
   });
 })();
 

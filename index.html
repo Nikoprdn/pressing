@@ -369,6 +369,21 @@
     .hours-body{flex:1;overflow-y:auto;padding:18px 16px calc(26px + env(safe-area-inset-bottom));}
     .hours-add-card{background:#fff;border-radius:18px;padding:18px;box-shadow:var(--sh);border:1px solid var(--line);margin-bottom:16px;}
     .hours-add-card .finp{margin-top:4px;}
+    .punch-card{background:linear-gradient(155deg,#17324f,#22496f);border-radius:18px;padding:20px 18px;box-shadow:var(--sh);margin-bottom:14px;color:#fff;text-align:center;}
+    .punch-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.72);}
+    .punch-dot{width:8px;height:8px;border-radius:50%;background:#6b7790;flex-shrink:0;transition:background .3s;}
+    .punch-dot.run{background:#3ddc97;box-shadow:0 0 0 3px rgba(61,220,151,.2);animation:pulse 1.2s infinite;}
+    .punch-dot.pause{background:#ffd23f;box-shadow:0 0 0 3px rgba(255,210,63,.2);}
+    .punch-timer{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:10px 0 4px;line-height:1;}
+    .punch-sub{font-size:12px;color:rgba(255,255,255,.62);font-weight:500;min-height:16px;margin-bottom:16px;line-height:1.4;}
+    .punch-actions{display:flex;gap:9px;}
+    .punch-btn{flex:1;border:none;border-radius:13px;padding:14px 6px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.2px;transition:transform .12s,opacity .12s;display:flex;align-items:center;justify-content:center;min-height:48px;}
+    .punch-btn:active{transform:scale(.95);}
+    .punch-btn[hidden]{display:none;}
+    .pb-start{background:#3ddc97;color:#0b3223;box-shadow:0 4px 12px rgba(61,220,151,.28);}
+    .pb-pause{background:#ffce54;color:#5a4300;box-shadow:0 4px 12px rgba(255,206,84,.28);}
+    .pb-stop{background:#ff6b6b;color:#fff;box-shadow:0 4px 12px rgba(255,107,107,.28);}
+    .punch-or{text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 12px;}
     .h-preview{background:var(--mist);border-radius:12px;padding:11px 14px;font-size:13px;color:#4a5b72;margin-top:12px;text-align:center;font-weight:600;}
     .h-preview strong{color:var(--navy);font-size:16px;font-weight:800;}
     .h-preview.invalid strong{color:#e2453c;}
@@ -511,6 +526,18 @@
   </div>
   <div class="hours-syncbar"><span id="hours-sync-lbl">Connexion…</span></div>
   <div class="hours-body">
+    <div class="punch-card" id="punch-card">
+      <div class="punch-status"><span class="punch-dot" id="punch-dot"></span><span id="punch-status-lbl">Aucun poste en cours</span></div>
+      <div class="punch-timer" id="punch-timer">00:00:00</div>
+      <div class="punch-sub" id="punch-sub">Appuie sur « Prise de poste » pour démarrer</div>
+      <div class="punch-actions">
+        <button class="punch-btn pb-start" id="punch-start">▶&nbsp;Prise de poste</button>
+        <button class="punch-btn pb-pause" id="punch-pause" hidden>⏸&nbsp;Pause</button>
+        <button class="punch-btn pb-stop" id="punch-stop" hidden>⏹&nbsp;Fin de poste</button>
+      </div>
+    </div>
+
+    <div class="punch-or">— ou saisie manuelle —</div>
     <div class="hours-add-card">
       <label class="flbl">Date</label>
       <input class="finp" id="h-date" type="date">
@@ -1365,6 +1392,7 @@ function openHoursScreen(){
   document.getElementById("h-note").value="";
   updateHoursPreview();
   document.getElementById("hours-screen").classList.add("open");
+  renderPunch();
   // Affiche immédiatement le cache local, puis rafraîchit depuis le serveur
   workHours=loadHoursLocal();
   renderHours();
@@ -1670,6 +1698,154 @@ document.getElementById("fname").addEventListener("input",function(){
   bodyEl.addEventListener("click", function(e){
     if(e.target.closest(".waze-port-link") && !e.defaultPrevented) setTimeout(closeMenu, 300);
   });
+})();
+
+// ── POINTEUSE : prise de poste / pause / reprise / fin de poste ───────────────
+// État persistant (horodatages) pour survivre au verrouillage ou à la fermeture.
+(function(){
+  var SHIFT_KEY = "llf_active_shift";
+  var timerEl   = document.getElementById("punch-timer");
+  var dotEl     = document.getElementById("punch-dot");
+  var lblEl     = document.getElementById("punch-status-lbl");
+  var subEl     = document.getElementById("punch-sub");
+  var startBtn  = document.getElementById("punch-start");
+  var pauseBtn  = document.getElementById("punch-pause");
+  var stopBtn   = document.getElementById("punch-stop");
+
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function hhmm(ts){ var d=new Date(ts); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
+  function fmtClock(ms){
+    if(ms<0) ms=0;
+    var s=Math.floor(ms/1000);
+    return pad2(Math.floor(s/3600))+":"+pad2(Math.floor((s%3600)/60))+":"+pad2(s%60);
+  }
+  function fmtBreak(ms){
+    var m=Math.round(ms/60000);
+    if(m<60) return m+" min";
+    return Math.floor(m/60)+"h"+(m%60?pad2(m%60):"");
+  }
+
+  function loadShift(){
+    try{ var raw=localStorage.getItem(SHIFT_KEY); return raw?JSON.parse(raw):null; }
+    catch(e){ return null; }
+  }
+  function saveShift(s){ try{ localStorage.setItem(SHIFT_KEY,JSON.stringify(s)); }catch(e){} }
+  function clearShift(){ try{ localStorage.removeItem(SHIFT_KEY); }catch(e){} }
+
+  // Pause cumulée (inclut la pause en cours si on est en pause)
+  function pausedMsNow(s,now){
+    var p=s.pausedMs||0;
+    if(s.status==="paused" && s.pauseStart) p+=now-s.pauseStart;
+    return p;
+  }
+  // Temps réellement travaillé = temps écoulé − pauses
+  function workedMsNow(s,now){ return (now-s.startAt)-pausedMsNow(s,now); }
+
+  function renderPunch(){
+    var s=loadShift();
+    var now=Date.now();
+    if(!s){
+      timerEl.textContent="00:00:00";
+      dotEl.className="punch-dot";
+      lblEl.textContent="Aucun poste en cours";
+      subEl.textContent="Appuie sur « Prise de poste » pour démarrer";
+      startBtn.hidden=false; startBtn.innerHTML="▶&nbsp;Prise de poste";
+      pauseBtn.hidden=true; stopBtn.hidden=true;
+      return;
+    }
+    timerEl.textContent=fmtClock(workedMsNow(s,now));
+    var brk=pausedMsNow(s,now);
+    if(s.status==="running"){
+      dotEl.className="punch-dot run";
+      lblEl.textContent="En poste depuis "+hhmm(s.startAt);
+      subEl.textContent=brk>0?("Pause cumulée : "+fmtBreak(brk)):"En cours…";
+      startBtn.hidden=true;
+      pauseBtn.hidden=false; stopBtn.hidden=false;
+    } else { // paused
+      dotEl.className="punch-dot pause";
+      lblEl.textContent="En pause";
+      subEl.textContent="Pause cumulée : "+fmtBreak(brk)+" · reprends quand tu veux";
+      startBtn.hidden=false; startBtn.innerHTML="▶&nbsp;Reprendre le poste";
+      pauseBtn.hidden=true; stopBtn.hidden=false;
+    }
+  }
+
+  function startOrResume(){
+    var s=loadShift();
+    var now=Date.now();
+    if(!s){
+      saveShift({startAt:now,pausedMs:0,pauseStart:null,status:"running"});
+      toast("▶ Poste démarré à "+hhmm(now));
+      if(navigator.vibrate) navigator.vibrate(30);
+    } else if(s.status==="paused"){
+      s.pausedMs=(s.pausedMs||0)+(s.pauseStart?now-s.pauseStart:0);
+      s.pauseStart=null; s.status="running";
+      saveShift(s);
+      toast("▶ Poste repris");
+      if(navigator.vibrate) navigator.vibrate(30);
+    }
+    renderPunch();
+  }
+  function pauseShift(){
+    var s=loadShift();
+    if(!s || s.status!=="running") return;
+    s.status="paused"; s.pauseStart=Date.now();
+    saveShift(s);
+    toast("⏸ En pause");
+    if(navigator.vibrate) navigator.vibrate(20);
+    renderPunch();
+  }
+  function endShift(){
+    var s=loadShift();
+    if(!s) return;
+    var now=Date.now();
+    var worked=workedMsNow(s,now);
+    var brkMin=Math.round(pausedMsNow(s,now)/60000);
+    var hours=worked/3600000;
+    if(hours<=0){
+      if(confirm("La durée travaillée est nulle. Annuler ce poste sans l'enregistrer ?")){
+        clearShift(); renderPunch();
+      }
+      return;
+    }
+    if(!confirm("Terminer le poste ? Durée travaillée : "+fmtH(hours)+
+      (brkMin?(" (pause "+brkMin+" min)"):""))) return;
+    var date=isoDate(new Date(s.startAt)); // date du DÉBUT du poste (gère le passage de minuit)
+    var entry={
+      date:date,
+      start:hhmm(s.startAt),
+      end:hhmm(now),
+      breakMin:brkMin,
+      hours:hours,
+      note:"Pointage automatique"
+    };
+    var idx=workHours.findIndex(function(h){return h.date===date;});
+    if(idx!==-1) workHours[idx]=entry; else workHours.push(entry);
+    workHours.sort(function(a,b){return b.date.localeCompare(a.date);});
+    clearShift();
+    saveHours();
+    renderHours();
+    renderPunch();
+    toast("⏹ Journée enregistrée ✔ ("+fmtH(hours)+")");
+    if(navigator.vibrate) navigator.vibrate([40,30,80]);
+  }
+
+  startBtn.addEventListener("click",startOrResume);
+  pauseBtn.addEventListener("click",pauseShift);
+  stopBtn.addEventListener("click",endShift);
+
+  // Tic chaque seconde : ne rafraîchit l'affichage que si un poste tourne et
+  // que l'écran des heures est visible (l'état vit dans localStorage, pas ici).
+  setInterval(function(){
+    var s=loadShift();
+    if(!s || s.status!=="running") return;
+    if(!document.getElementById("hours-screen").classList.contains("open")) return;
+    timerEl.textContent=fmtClock(workedMsNow(s,Date.now()));
+  },1000);
+
+  // Exposé pour openHoursScreen()
+  window.renderPunch=renderPunch;
+  renderPunch();
 })();
 
 fetchClients();

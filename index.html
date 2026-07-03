@@ -456,8 +456,8 @@
   <div id="plan"></div>
 </div>
 <div class="filters" id="filters">
-  <button class="ftab active" data-f="all">Tous <span class="cnt" id="ba">0</span></button>
-  <button class="ftab" data-f="today">☀ Aujourd'hui</button>
+  <button class="ftab" data-f="all">Tous <span class="cnt" id="ba">0</span></button>
+  <button class="ftab active" data-f="today">☀ Aujourd'hui</button>
   <button class="ftab" data-f="collecte">📦 Collecte <span class="cnt" id="bc">0</span></button>
   <button class="ftab" data-f="traitement">🧹 Traitement <span class="cnt" id="bv">0</span></button>
   <button class="ftab" data-f="livraison">🚚 Livraison <span class="cnt" id="bl">0</span></button>
@@ -662,7 +662,7 @@ var BACKUP_URL = "https://script.google.com/macros/s/AKfycby-L7mtX-7alxeXt-yTfZC
 
 // ═══════════════════════════════════════════════════════════
 var clients = [];
-var filter  = "all";
+var filter  = "today";
 var pending = false;
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -1535,29 +1535,69 @@ document.getElementById("hours-list").addEventListener("click",function(e){
   }
 });
 
+// ── CARNET CLIENTS : mémorise téléphone + adresses des clients récurrents ────
+// Persiste en local ET se reconstruit depuis l'historique des commandes (source
+// synchronisée). Résultat : le numéro d'un client revient tout seul, même s'il
+// est tapé différemment, et même si ses anciennes commandes ont été supprimées.
+var CLIENTBOOK_KEY = "llf_client_book";
+
+// Normalise un nom : minuscules, sans accents, espaces compactés (pour comparer)
+function normName(s){
+  return String(s||"")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase().replace(/\s+/g," ").trim();
+}
+function loadClientBook(){
+  try{ var o=JSON.parse(localStorage.getItem(CLIENTBOOK_KEY)||"{}"); return (o&&typeof o==="object")?o:{}; }
+  catch(e){ return {}; }
+}
+function saveClientBook(book){ try{ localStorage.setItem(CLIENTBOOK_KEY,JSON.stringify(book)); }catch(e){} }
+
+// Fusionne le carnet avec l'historique : garde par client le dernier téléphone
+// et les dernières adresses NON VIDES connus. Les commandes récentes priment.
+function syncClientBook(){
+  var book=loadClientBook();
+  clients.forEach(function(c){
+    var k=normName(c.name);
+    if(!k) return;
+    var e=book[k]||{};
+    e.name=c.name; // conserve la dernière orthographe saisie
+    if(c.phone) e.phone=c.phone;
+    var col=c.collectAddress||c.address; if(col) e.collectAddress=col;
+    var del=c.deliverAddress||c.address; if(del) e.deliverAddress=del;
+    book[k]=e;
+  });
+  saveClientBook(book);
+  return book;
+}
+function lookupClient(name){
+  var k=normName(name);
+  if(!k) return null;
+  return loadClientBook()[k]||null;
+}
+
 // ── AUTOCOMPLÉTION NOM CLIENT ────────────────────────────────
 function updateClientsDatalist(){
   var dl=document.getElementById("clients-datalist");
   if(!dl)return;
-  // Noms uniques triés
-  var names=[];
-  clients.forEach(function(c){if(c.name&&names.indexOf(c.name)<0)names.push(c.name);});
-  names.sort();
+  var book=syncClientBook();
+  var names=Object.keys(book).map(function(k){return book[k].name;}).filter(Boolean);
+  names.sort(function(a,b){return a.localeCompare(b,"fr");});
   dl.innerHTML=names.map(function(n){return"<option value='"+esc(n)+"'>";}).join("");
 }
 
 document.getElementById("fname").addEventListener("input",function(){
   var val=this.value.trim();
   if(!val)return;
-  // Chercher un client existant avec ce nom exact
-  var match=null;
-  for(var i=clients.length-1;i>=0;i--){
-    if(clients[i].name===val){match=clients[i];break;}
-  }
+  // Recherche insensible à la casse et aux accents dans le carnet clients
+  var match=lookupClient(val);
   if(!match)return;
-  // Pré-remplir téléphone si vide
+  // Pré-remplir le téléphone si vide (+ petit rappel visuel)
   var fphone=document.getElementById("fphone");
-  if(fphone&&!fphone.value&&match.phone)fphone.value=match.phone;
+  if(fphone&&!fphone.value&&match.phone){
+    fphone.value=match.phone;
+    toast("📇 Client connu — n° pré-rempli");
+  }
   // Pré-remplir adresse collecte si vide
   var fcol=document.getElementById("faddr-collect");
   if(fcol&&!fcol.value&&match.collectAddress)fcol.value=match.collectAddress;

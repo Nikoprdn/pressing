@@ -379,6 +379,26 @@
     .pb-pause{background:#ffce54;color:#5a4300;box-shadow:0 4px 12px rgba(255,206,84,.28);}
     .pb-stop{background:#ff6b6b;color:#fff;box-shadow:0 4px 12px rgba(255,107,107,.28);}
     .punch-or{text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 12px;}
+    .pe-overlay{position:fixed;inset:0;z-index:700;display:none;align-items:center;justify-content:center;padding:22px;}
+    .pe-overlay.open{display:flex;}
+    .pe-bg{position:absolute;inset:0;background:rgba(9,16,30,.66);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+    .pe-card{position:relative;z-index:1;background:#fff;border-radius:22px;padding:24px 22px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+    .pe-title{font-size:18px;font-weight:800;color:var(--navy);text-align:center;margin-bottom:16px;}
+    .pe-worked{background:var(--paper);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--muted);font-weight:600;text-align:center;margin-bottom:18px;}
+    .pe-worked strong{color:var(--navy);font-size:17px;font-weight:800;}
+    .pe-break{font-size:11px;color:var(--muted);font-weight:600;margin-top:4px;}
+    .pe-break:empty{display:none;}
+    .pe-add-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;}
+    .pe-add-row{display:flex;gap:10px;margin-bottom:18px;}
+    .pe-field{flex:1;display:flex;align-items:center;gap:6px;background:#fbfcfe;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;transition:border-color .15s;}
+    .pe-field:focus-within{border-color:var(--navy);}
+    .pe-field input{flex:1;min-width:0;border:none;background:none;outline:none;font-family:inherit;font-size:18px;font-weight:700;color:var(--navy);padding:12px 0;text-align:center;font-variant-numeric:tabular-nums;}
+    .pe-field span{font-size:12px;font-weight:700;color:var(--muted);}
+    .pe-total{text-align:center;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:18px;}
+    .pe-total strong{display:block;color:#188a5c;font-size:24px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;}
+    .pe-save{width:100%;background:linear-gradient(140deg,#20b077,#188a5c);color:#fff;border:none;border-radius:14px;font-weight:800;font-size:14px;padding:14px;cursor:pointer;box-shadow:0 6px 16px rgba(24,138,92,.32);}
+    .pe-save:active{transform:scale(.98);}
+    .pe-cancel{width:100%;background:none;color:#9aa6b8;border:none;font-size:13px;font-weight:600;padding:11px;cursor:pointer;margin-top:6px;}
     .h-preview{background:var(--mist);border-radius:12px;padding:11px 14px;font-size:13px;color:#4a5b72;margin-top:12px;text-align:center;font-weight:600;}
     .h-preview strong{color:var(--navy);font-size:16px;font-weight:800;}
     .h-preview.invalid strong{color:#e2453c;}
@@ -465,6 +485,21 @@
 </div>
 <div id="cards"></div>
 <div id="empty" style="display:none"><div class="eico">👕</div><p>Aucune commande.<br>Appuie sur <strong>+</strong> pour démarrer.</p></div>
+<div class="pe-overlay" id="pe-overlay">
+  <div class="pe-bg" id="pe-bg"></div>
+  <div class="pe-card">
+    <div class="pe-title">⏹ Fin de poste</div>
+    <div class="pe-worked">Durée pointée&nbsp;: <strong id="pe-worked-val">—</strong><div class="pe-break" id="pe-break"></div></div>
+    <div class="pe-add-label">Ajouter des heures oubliées (optionnel)</div>
+    <div class="pe-add-row">
+      <div class="pe-field"><input id="pe-add-h" type="number" min="0" step="1" inputmode="numeric" placeholder="0"><span>h</span></div>
+      <div class="pe-field"><input id="pe-add-m" type="number" min="0" max="59" step="5" inputmode="numeric" placeholder="0"><span>min</span></div>
+    </div>
+    <div class="pe-total">Total enregistré&nbsp;: <strong id="pe-total-val">—</strong></div>
+    <button class="pe-save" id="pe-save">✓ Enregistrer la journée</button>
+    <button class="pe-cancel" id="pe-cancel">Annuler</button>
+  </div>
+</div>
 <button class="fab" id="fab">+</button>
 <button class="clock-tab" id="clock-tab" title=" ">🕐</button>
 <button class="anchor-btn" id="anchor-btn" title="Navigation Waze vers les ports">⚓</button>
@@ -1814,40 +1849,69 @@ document.getElementById("fname").addEventListener("input",function(){
     if(navigator.vibrate) navigator.vibrate(20);
     renderPunch();
   }
+  var pendingEnd=null; // {s, now, worked(ms), brkMin}
+
+  function fmtDur(ms){
+    var h=Math.floor(ms/3600000), m=Math.round((ms%3600000)/60000);
+    if(m===60){h+=1;m=0;}
+    return (h?h+"h":"")+(m?(h?" ":"")+m+"min":(h?"":"0min"));
+  }
+  function peAddedMs(){
+    var h=parseInt(document.getElementById("pe-add-h").value,10)||0;
+    var m=parseInt(document.getElementById("pe-add-m").value,10)||0;
+    if(h<0)h=0; if(m<0)m=0;
+    return (h*3600000)+(m*60000);
+  }
+  function peUpdateTotal(){
+    if(!pendingEnd) return;
+    var total=(pendingEnd.worked+peAddedMs())/3600000;
+    document.getElementById("pe-total-val").textContent=fmtH(total);
+  }
+  function peClose(){
+    document.getElementById("pe-overlay").classList.remove("open");
+    pendingEnd=null;
+  }
+
   function endShift(){
     var s=loadShift();
     if(!s) return;
     var now=Date.now();
-    var worked=workedMsNow(s,now);
-    var brkMin=Math.round(pausedMsNow(s,now)/60000);
-    var hours=worked/3600000;
-    if(hours<=0){
-      if(confirm("La durée travaillée est nulle. Annuler ce poste sans l'enregistrer ?")){
-        clearShift(); renderPunch();
-      }
-      return;
-    }
-    if(!confirm("Terminer le poste ? Durée travaillée : "+fmtH(hours)+
-      (brkMin?(" (pause "+brkMin+" min)"):""))) return;
+    pendingEnd={s:s, now:now, worked:workedMsNow(s,now), brkMin:Math.round(pausedMsNow(s,now)/60000)};
+    document.getElementById("pe-worked-val").textContent=fmtH(pendingEnd.worked/3600000);
+    document.getElementById("pe-break").textContent=pendingEnd.brkMin?("Pause déduite : "+pendingEnd.brkMin+" min"):"";
+    document.getElementById("pe-add-h").value="";
+    document.getElementById("pe-add-m").value="";
+    peUpdateTotal();
+    document.getElementById("pe-overlay").classList.add("open");
+  }
+
+  function peSave(){
+    if(!pendingEnd) return;
+    var s=pendingEnd.s, now=pendingEnd.now, brkMin=pendingEnd.brkMin;
+    var addMs=peAddedMs();
+    var hours=(pendingEnd.worked+addMs)/3600000;
+    if(hours<=0){ toast("Durée nulle — ajoute des heures ou annule"); return; }
     var date=isoDate(new Date(s.startAt)); // date du DÉBUT du poste (gère le passage de minuit)
-    var entry={
-      date:date,
-      start:hhmm(s.startAt),
-      end:hhmm(now),
-      breakMin:brkMin,
-      hours:hours,
-      note:"Pointage automatique"
-    };
+    var note="Pointage automatique";
+    if(addMs>0) note+=" (+"+fmtDur(addMs)+" ajoutées)";
+    var entry={ date:date, start:hhmm(s.startAt), end:hhmm(now), breakMin:brkMin, hours:hours, note:note };
     var idx=workHours.findIndex(function(h){return h.date===date;});
     if(idx!==-1) workHours[idx]=entry; else workHours.push(entry);
     workHours.sort(function(a,b){return b.date.localeCompare(a.date);});
     clearShift();
     saveHours();
     renderHours();
+    peClose();
     renderPunch();
     toast("⏹ Journée enregistrée ✔ ("+fmtH(hours)+")");
     if(navigator.vibrate) navigator.vibrate([40,30,80]);
   }
+
+  document.getElementById("pe-save").addEventListener("click",peSave);
+  document.getElementById("pe-cancel").addEventListener("click",peClose);
+  document.getElementById("pe-bg").addEventListener("click",peClose);
+  document.getElementById("pe-add-h").addEventListener("input",peUpdateTotal);
+  document.getElementById("pe-add-m").addEventListener("input",peUpdateTotal);
 
   startBtn.addEventListener("click",startOrResume);
   pauseBtn.addEventListener("click",pauseShift);

@@ -307,6 +307,9 @@
     .fab{position:fixed;bottom:calc(26px + env(safe-area-inset-bottom));right:20px;width:60px;height:60px;border-radius:20px;background:linear-gradient(140deg,#1d4068,#2a5689);color:#fff;font-size:26px;font-weight:300;border:none;box-shadow:0 8px 24px rgba(22,49,80,.42);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .15s;}
     .clock-tab{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom));left:18px;width:36px;height:36px;border-radius:12px;background:rgba(22,49,80,.1);color:rgba(22,49,80,.5);font-size:15px;border:none;display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer;transition:opacity .15s;}
     .clock-tab:active{opacity:.6;}
+    .clock-tab.shift-off{background:#ffe3e0;color:#c0392b;box-shadow:0 0 0 2px rgba(231,76,60,.28);}
+    .clock-tab.shift-run{background:#d3f6e8;color:#0c8a5a;box-shadow:0 0 0 2px rgba(61,220,151,.4);animation:pulse 1.4s infinite;}
+    .clock-tab.shift-pause{background:#fff2cc;color:#a06a00;box-shadow:0 0 0 2px rgba(255,206,84,.45);}
     .fab:active{transform:scale(.92);}
     .modal-wrap{position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;}
     .modal-wrap.open{display:flex;}
@@ -345,19 +348,6 @@
     .btn-delete:active{background:#f9dcdd;}
     .toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 24px;border-radius:14px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:300;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(10,22,42,.35);}
 
-    /* LOCK SCREEN */
-    .lock-screen{position:fixed;inset:0;z-index:600;display:none;align-items:center;justify-content:center;padding:24px;}
-    .lock-screen.open{display:flex;}
-    .lock-bg{position:absolute;inset:0;background:rgba(9,16,30,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
-    .lock-card{position:relative;background:#fff;border-radius:22px;padding:32px 26px;width:100%;max-width:330px;text-align:center;z-index:1;box-shadow:0 20px 60px rgba(0,0,0,.4);}
-    .lock-icon{font-size:34px;margin-bottom:10px;}
-    .lock-title{font-size:17px;font-weight:800;color:var(--navy);margin-bottom:18px;}
-    .lock-input{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;font-size:18px;text-align:center;letter-spacing:6px;outline:none;font-family:inherit;background:#fbfcfe;}
-    .lock-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(22,49,80,.1);}
-    .lock-err{color:#e2453c;font-size:12px;margin-top:10px;display:none;font-weight:700;}
-    .lock-err.show{display:block;}
-    .lock-btn{width:100%;background:linear-gradient(140deg,#1d4068,#2a5689);color:#fff;border:none;border-radius:14px;font-weight:800;font-size:14px;padding:13px;cursor:pointer;margin-top:18px;}
-    .lock-cancel{width:100%;background:none;color:#9aa6b8;border:none;font-size:13px;padding:11px;cursor:pointer;margin-top:4px;}
 
     /* HOURS TRACKER SCREEN */
     .hours-screen{position:fixed;inset:0;z-index:550;display:none;background:var(--paper);flex-direction:column;}
@@ -505,18 +495,6 @@
 
 
 <!-- ÉCRAN MOT DE PASSE -->
-<div class="lock-screen" id="lock-screen">
-  <div class="lock-bg" id="lock-bg"></div>
-  <div class="lock-card">
-    <div class="lock-icon">🔒</div>
-    <div class="lock-title">Accès protégé</div>
-    <input type="password" class="lock-input" id="lock-input" placeholder="Mot de passe" inputmode="numeric" autocomplete="off">
-    <div class="lock-err" id="lock-err">Mot de passe incorrect</div>
-    <button class="lock-btn" id="lock-submit">Déverrouiller</button>
-    <button class="lock-cancel" id="lock-cancel">Annuler</button>
-  </div>
-</div>
-
 <!-- COMPTEUR D'HEURES DE TRAVAIL -->
 <div class="hours-screen" id="hours-screen">
   <div class="hours-head">
@@ -1298,34 +1276,12 @@ function updateClock(){
 updateClock();
 setInterval(updateClock,1000);
 
-// ── ONGLET HEURES — VERROUILLAGE PAR MOT DE PASSE ────────────
-var HOURS_PASSWORD="64586458";
+// ── ONGLET HEURES — ACCÈS DIRECT (sans mot de passe) ──────────
 var HOURS_KEY="pressingrun_work_hours";
 
 document.getElementById("clock-tab").addEventListener("click",function(){
-  document.getElementById("lock-input").value="";
-  document.getElementById("lock-err").classList.remove("show");
-  document.getElementById("lock-screen").classList.add("open");
-  setTimeout(function(){document.getElementById("lock-input").focus();},150);
+  openHoursScreen();
 });
-
-function closeLock(){document.getElementById("lock-screen").classList.remove("open");}
-document.getElementById("lock-bg").addEventListener("click",closeLock);
-document.getElementById("lock-cancel").addEventListener("click",closeLock);
-
-function tryUnlock(){
-  var val=document.getElementById("lock-input").value.trim();
-  if(val===HOURS_PASSWORD){
-    closeLock();
-    openHoursScreen();
-  } else {
-    document.getElementById("lock-err").classList.add("show");
-    document.getElementById("lock-input").value="";
-    document.getElementById("lock-input").focus();
-  }
-}
-document.getElementById("lock-submit").addEventListener("click",tryUnlock);
-document.getElementById("lock-input").addEventListener("keydown",function(e){if(e.key==="Enter")tryUnlock();});
 
 // ── COMPTEUR D'HEURES DE TRAVAIL ──────────────────────────────
 var workHours=[];
@@ -1781,7 +1737,19 @@ document.getElementById("fname").addEventListener("input",function(){
   // Temps réellement travaillé = temps écoulé − pauses
   function workedMsNow(s,now){ return (now-s.startAt)-pausedMsNow(s,now); }
 
+  // Met à jour le bouton d'état coloré de la page principale (🕐)
+  function updateShiftIndicator(){
+    var tab=document.getElementById("clock-tab");
+    if(!tab) return;
+    var s=loadShift();
+    tab.classList.remove("shift-off","shift-run","shift-pause");
+    if(!s) tab.classList.add("shift-off");
+    else if(s.status==="paused") tab.classList.add("shift-pause");
+    else tab.classList.add("shift-run");
+  }
+
   function renderPunch(){
+    updateShiftIndicator();
     var s=loadShift();
     var now=Date.now();
     if(!s){

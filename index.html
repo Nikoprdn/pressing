@@ -399,6 +399,19 @@
     .pe-save{width:100%;background:linear-gradient(140deg,#20b077,#188a5c);color:#fff;border:none;border-radius:14px;font-weight:800;font-size:14px;padding:14px;cursor:pointer;box-shadow:0 6px 16px rgba(24,138,92,.32);}
     .pe-save:active{transform:scale(.98);}
     .pe-cancel{width:100%;background:none;color:#9aa6b8;border:none;font-size:13px;font-weight:600;padding:11px;cursor:pointer;margin-top:6px;}
+    .person-chooser{position:fixed;inset:0;z-index:720;display:none;align-items:center;justify-content:center;padding:22px;}
+    .person-chooser.open{display:flex;}
+    .pc-bg{position:absolute;inset:0;background:rgba(9,16,30,.66);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+    .pc-card{position:relative;z-index:1;background:#fff;border-radius:22px;padding:24px 22px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+    .pc-title{font-size:19px;font-weight:800;color:var(--navy);text-align:center;}
+    .pc-sub{font-size:12px;color:var(--muted);text-align:center;margin:6px 0 18px;font-weight:500;line-height:1.4;}
+    .pc-btn{width:100%;display:flex;align-items:center;gap:14px;border:1.5px solid var(--line);background:#fbfcfe;border-radius:16px;padding:16px 18px;font-family:inherit;font-size:17px;font-weight:800;color:var(--navy);cursor:pointer;transition:transform .12s,border-color .15s;margin-top:12px;}
+    .pc-btn:active{transform:scale(.98);}
+    .pc-ini{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:800;}
+    .pc-nic .pc-ini{background:linear-gradient(140deg,#2a5689,#1d4068);}
+    .pc-vic .pc-ini{background:linear-gradient(140deg,#c86fb0,#9c4585);}
+    .pc-nic:active{border-color:#2a5689;}
+    .pc-vic:active{border-color:#9c4585;}
     .work-alert{position:fixed;top:var(--hdr-h,64px);left:0;right:0;z-index:500;background:linear-gradient(140deg,#ec5a53,#c0362e);color:#fff;font-size:11px;font-weight:700;letter-spacing:.2px;text-align:center;padding:6px 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 16px rgba(178,45,38,.38);transform:translateY(-14px);opacity:0;pointer-events:none;transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .3s;cursor:pointer;}
     .work-alert.show{transform:translateY(0);opacity:1;pointer-events:auto;}
     .h-preview{background:var(--mist);border-radius:12px;padding:11px 14px;font-size:13px;color:#4a5b72;margin-top:12px;text-align:center;font-weight:600;}
@@ -488,6 +501,15 @@
 </div>
 <div id="cards"></div>
 <div id="empty" style="display:none"><div class="eico">👕</div><p>Aucune commande.<br>Appuie sur <strong>+</strong> pour démarrer.</p></div>
+<div class="person-chooser" id="person-chooser">
+  <div class="pc-bg" id="pc-bg"></div>
+  <div class="pc-card">
+    <div class="pc-title">Sélectionne ton profil</div>
+    <div class="pc-sub">Choisis la personne pour voir et gérer ses heures</div>
+    <button class="pc-btn pc-nic" id="pc-nicolas"><span class="pc-ini">N</span>Nicolas</button>
+    <button class="pc-btn pc-vic" id="pc-victoria"><span class="pc-ini">V</span>Victoria</button>
+  </div>
+</div>
 <div class="pe-overlay" id="pe-overlay">
   <div class="pe-bg" id="pe-bg"></div>
   <div class="pe-card">
@@ -542,7 +564,7 @@
 <div class="hours-screen" id="hours-screen">
   <div class="hours-head">
     <button class="hours-back" id="hours-back">←</button>
-    <div class="hours-title">Heures de travail</div>
+    <div class="hours-title" id="hours-title">Heures de travail</div>
     <div style="width:34px"></div>
   </div>
   <div class="hours-syncbar"><span id="hours-sync-lbl">Connexion…</span></div>
@@ -1319,15 +1341,21 @@ function updateClock(){
 updateClock();
 setInterval(updateClock,1000);
 
-// ── ONGLET HEURES — ACCÈS DIRECT (sans mot de passe) ──────────
-var HOURS_KEY="pressingrun_work_hours";
+// ── ONGLET HEURES — CHOIX DE LA PERSONNE (Nicolas / Victoria) ──────────
+var currentPerson="nicolas";
+function personLabel(p){ return p==="victoria" ? "Victoria" : "Nicolas"; }
+function hoursKey(p){ return p==="victoria" ? "pressingrun_work_hours_victoria" : "pressingrun_work_hours"; }
+function hoursPath(p){ return p==="victoria" ? "/hours-victoria" : "/hours"; }
 
-document.getElementById("clock-tab").addEventListener("click",function(){
-  openHoursScreen();
-});
-document.getElementById("status-btn").addEventListener("click",function(){
-  openHoursScreen();
-});
+function openPersonChooser(){ document.getElementById("person-chooser").classList.add("open"); }
+function closePersonChooser(){ document.getElementById("person-chooser").classList.remove("open"); }
+function selectPerson(p){ closePersonChooser(); openHoursScreen(p); }
+
+document.getElementById("clock-tab").addEventListener("click",openPersonChooser);
+document.getElementById("status-btn").addEventListener("click",openPersonChooser);
+document.getElementById("pc-nicolas").addEventListener("click",function(){selectPerson("nicolas");});
+document.getElementById("pc-victoria").addEventListener("click",function(){selectPerson("victoria");});
+document.getElementById("pc-bg").addEventListener("click",closePersonChooser);
 
 // ── COMPTEUR D'HEURES DE TRAVAIL ──────────────────────────────
 var workHours=[];
@@ -1336,19 +1364,19 @@ var hoursLoaded=false;
 
 function loadHoursLocal(){
   try{
-    var raw=localStorage.getItem(HOURS_KEY);
+    var raw=localStorage.getItem(hoursKey(currentPerson));
     var data=raw?JSON.parse(raw):[];
     return Array.isArray(data)?data:[];
   }catch(e){return [];}
 }
 function saveHoursLocal(){
-  try{localStorage.setItem(HOURS_KEY,JSON.stringify(workHours));}catch(e){}
+  try{localStorage.setItem(hoursKey(currentPerson),JSON.stringify(workHours));}catch(e){}
 }
 
 // Charge depuis le Worker (source de vérité partagée), avec fallback local si hors-ligne
 function loadHours(cb){
   document.getElementById("hours-sync-lbl").textContent="Chargement\u2026";
-  fetch(API+"/hours")
+  fetch(API+hoursPath(currentPerson))
     .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
     .then(function(data){
       workHours=Array.isArray(data)?data:[];
@@ -1370,7 +1398,7 @@ function saveHours(){
   if(hoursPending)return;
   hoursPending=true;
   document.getElementById("hours-sync-lbl").textContent="Sauvegarde\u2026";
-  fetch(API+"/hours",{
+  fetch(API+hoursPath(currentPerson),{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify(workHours)
@@ -1386,7 +1414,10 @@ function saveHours(){
   });
 }
 
-function openHoursScreen(){
+function openHoursScreen(person){
+  currentPerson = person || currentPerson || "nicolas";
+  var titleEl=document.getElementById("hours-title");
+  if(titleEl) titleEl.textContent="Heures — "+personLabel(currentPerson);
   document.getElementById("h-date").value=todayISO();
   document.getElementById("h-start").value="";
   document.getElementById("h-end").value="";
@@ -1745,7 +1776,15 @@ document.getElementById("fname").addEventListener("input",function(){
 // ── POINTEUSE : prise de poste / pause / reprise / fin de poste ───────────────
 // État persistant (horodatages) pour survivre au verrouillage ou à la fermeture.
 (function(){
-  var SHIFT_KEY = "llf_active_shift";
+  // Migration : ancien poste unique -> clé "nicolas"
+  try{
+    var _old=localStorage.getItem("llf_active_shift");
+    if(_old && !localStorage.getItem("llf_active_shift_nicolas")){
+      localStorage.setItem("llf_active_shift_nicolas",_old);
+      localStorage.removeItem("llf_active_shift");
+    }
+  }catch(e){}
+  function shiftKey(p){ return "llf_active_shift_"+(p||"nicolas"); }
   var timerEl   = document.getElementById("punch-timer");
   var dotEl     = document.getElementById("punch-dot");
   var lblEl     = document.getElementById("punch-status-lbl");
@@ -1767,12 +1806,27 @@ document.getElementById("fname").addEventListener("input",function(){
     return Math.floor(m/60)+"h"+(m%60?pad2(m%60):"");
   }
 
-  function loadShift(){
-    try{ var raw=localStorage.getItem(SHIFT_KEY); return raw?JSON.parse(raw):null; }
+  function loadShiftFor(p){
+    try{ var raw=localStorage.getItem(shiftKey(p)); return raw?JSON.parse(raw):null; }
     catch(e){ return null; }
   }
-  function saveShift(s){ try{ localStorage.setItem(SHIFT_KEY,JSON.stringify(s)); }catch(e){} }
-  function clearShift(){ try{ localStorage.removeItem(SHIFT_KEY); }catch(e){} }
+  function loadShift(){ return loadShiftFor(currentPerson); }
+  function saveShift(s){ try{ localStorage.setItem(shiftKey(currentPerson),JSON.stringify(s)); }catch(e){} }
+  function clearShift(){ try{ localStorage.removeItem(shiftKey(currentPerson)); }catch(e){} }
+
+  // État combiné des deux personnes (pour l'indicateur d'en-tête + le rappel)
+  function shiftState(){
+    var n=loadShiftFor("nicolas"), v=loadShiftFor("victoria");
+    if((n&&n.status!=="paused")||(v&&v.status!=="paused")) return "run";
+    if((n&&n.status==="paused")||(v&&v.status==="paused")) return "pause";
+    return null;
+  }
+  function shiftSummary(){
+    var parts=[], n=loadShiftFor("nicolas"), v=loadShiftFor("victoria");
+    if(n) parts.push("Nicolas "+(n.status==="paused"?"en pause":"en poste"));
+    if(v) parts.push("Victoria "+(v.status==="paused"?"en pause":"en poste"));
+    return parts.length?parts.join(" · "):"Aucun poste en cours";
+  }
 
   // Pause cumulée (inclut la pause en cours si on est en pause)
   function pausedMsNow(s,now){
@@ -1790,11 +1844,12 @@ document.getElementById("fname").addEventListener("input",function(){
   function updateShiftIndicator(){
     var b=document.getElementById("status-btn");
     if(!b) return;
-    var s=loadShift();
+    var st=shiftState();
     b.classList.remove("shift-off","shift-run","shift-pause");
-    if(!s){ b.classList.add("shift-off"); b.innerHTML=ICON_STOP; b.title="Aucun poste en cours — voir les heures"; }
-    else if(s.status==="paused"){ b.classList.add("shift-pause"); b.innerHTML=ICON_PAUSE; b.title="Poste en pause — voir les heures"; }
-    else { b.classList.add("shift-run"); b.innerHTML=ICON_PLAY; b.title="Poste en cours — voir les heures"; }
+    if(st==="run"){ b.classList.add("shift-run"); b.innerHTML=ICON_PLAY; }
+    else if(st==="pause"){ b.classList.add("shift-pause"); b.innerHTML=ICON_PAUSE; }
+    else { b.classList.add("shift-off"); b.innerHTML=ICON_STOP; }
+    b.title=shiftSummary()+" — choisir la personne";
   }
 
   function renderPunch(){
@@ -1940,12 +1995,12 @@ document.getElementById("fname").addEventListener("input",function(){
   if(workAlertEl){
     workAlertEl.addEventListener("click",function(){
       workAlertEl.classList.remove("show");
-      openHoursScreen();
+      openPersonChooser();
     });
   }
   setInterval(function(){
-    if(!loadShift()) showWorkAlert();                          // aucune période en cours → rappel
-    else if(workAlertEl) workAlertEl.classList.remove("show"); // poste en cours/pause → pas de rappel
+    if(!shiftState()) showWorkAlert();                         // aucun poste (ni Nicolas ni Victoria) → rappel
+    else if(workAlertEl) workAlertEl.classList.remove("show"); // au moins un poste actif → pas de rappel
   },15000);
 
   // Exposé pour openHoursScreen()

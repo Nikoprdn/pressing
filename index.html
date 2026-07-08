@@ -1814,20 +1814,6 @@ document.getElementById("fname").addEventListener("input",function(){
   function saveShift(s){ try{ localStorage.setItem(shiftKey(currentPerson),JSON.stringify(s)); }catch(e){} }
   function clearShift(){ try{ localStorage.removeItem(shiftKey(currentPerson)); }catch(e){} }
 
-  // État combiné des deux personnes (pour l'indicateur d'en-tête + le rappel)
-  function shiftState(){
-    var n=loadShiftFor("nicolas"), v=loadShiftFor("victoria");
-    if((n&&n.status!=="paused")||(v&&v.status!=="paused")) return "run";
-    if((n&&n.status==="paused")||(v&&v.status==="paused")) return "pause";
-    return null;
-  }
-  function shiftSummary(){
-    var parts=[], n=loadShiftFor("nicolas"), v=loadShiftFor("victoria");
-    if(n) parts.push("Nicolas "+(n.status==="paused"?"en pause":"en poste"));
-    if(v) parts.push("Victoria "+(v.status==="paused"?"en pause":"en poste"));
-    return parts.length?parts.join(" · "):"Aucun poste en cours";
-  }
-
   // Pause cumulée (inclut la pause en cours si on est en pause)
   function pausedMsNow(s,now){
     var p=s.pausedMs||0;
@@ -1844,12 +1830,12 @@ document.getElementById("fname").addEventListener("input",function(){
   function updateShiftIndicator(){
     var b=document.getElementById("status-btn");
     if(!b) return;
-    var st=shiftState();
+    var n=loadShiftFor("nicolas");
+    var st = !n ? null : (n.status==="paused" ? "pause" : "run");
     b.classList.remove("shift-off","shift-run","shift-pause");
-    if(st==="run"){ b.classList.add("shift-run"); b.innerHTML=ICON_PLAY; }
-    else if(st==="pause"){ b.classList.add("shift-pause"); b.innerHTML=ICON_PAUSE; }
-    else { b.classList.add("shift-off"); b.innerHTML=ICON_STOP; }
-    b.title=shiftSummary()+" — choisir la personne";
+    if(st==="run"){ b.classList.add("shift-run"); b.innerHTML=ICON_PLAY; b.title="Nicolas en poste — choisir le profil"; }
+    else if(st==="pause"){ b.classList.add("shift-pause"); b.innerHTML=ICON_PAUSE; b.title="Nicolas en pause — choisir le profil"; }
+    else { b.classList.add("shift-off"); b.innerHTML=ICON_STOP; b.title="Nicolas : aucun poste — choisir le profil"; }
   }
 
   function renderPunch(){
@@ -1999,8 +1985,8 @@ document.getElementById("fname").addEventListener("input",function(){
     });
   }
   setInterval(function(){
-    if(!shiftState()) showWorkAlert();                         // aucun poste (ni Nicolas ni Victoria) → rappel
-    else if(workAlertEl) workAlertEl.classList.remove("show"); // au moins un poste actif → pas de rappel
+    if(!loadShiftFor("nicolas")) showWorkAlert();              // Nicolas sans poste → rappel
+    else if(workAlertEl) workAlertEl.classList.remove("show"); // Nicolas en poste/pause → pas de rappel
   },15000);
 
   // Exposé pour openHoursScreen()

@@ -351,7 +351,7 @@
     .btn-cancel{background:#eef1f6;color:#5a6b80;border:none;border-radius:14px;font-weight:700;font-size:14px;padding:13px;cursor:pointer;width:100%;}
     .btn-delete{background:#fdeced;color:#c0362e;border:1.5px solid #f3c9c5;border-radius:14px;font-weight:800;font-size:14px;padding:12px;cursor:pointer;width:100%;}
     .btn-delete:active{background:#f9dcdd;}
-    .toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 24px;border-radius:14px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:300;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(10,22,42,.35);}
+    .toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 24px;border-radius:14px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:900;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(10,22,42,.35);}
 
 
     /* HOURS TRACKER SCREEN */
@@ -364,6 +364,15 @@
     .hours-body{flex:1;overflow-y:auto;padding:18px 16px calc(26px + env(safe-area-inset-bottom));}
     .hours-add-card{background:#fff;border-radius:18px;padding:18px;box-shadow:var(--sh);border:1px solid var(--line);margin-bottom:16px;}
     .hours-add-card .finp{margin-top:4px;}
+    .manual-open{width:100%;background:#fff;border:1.5px dashed #c7d2e2;color:var(--navy);border-radius:16px;padding:14px;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:16px;box-shadow:var(--sh);display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .12s;}
+    .manual-open:active{transform:scale(.99);background:#f5f8fc;}
+    .manual-overlay{position:fixed;inset:0;z-index:710;display:none;align-items:center;justify-content:center;padding:20px;}
+    .manual-overlay.open{display:flex;}
+    .manual-bg{position:absolute;inset:0;background:rgba(9,16,30,.66);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+    .manual-card{position:relative;z-index:1;background:#fff;border-radius:22px;padding:22px 20px;width:100%;max-width:360px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+    .manual-card .finp{margin-top:4px;}
+    .manual-title{font-size:18px;font-weight:800;color:var(--navy);text-align:center;margin-bottom:16px;}
+    .manual-cancel{width:100%;background:none;color:#9aa6b8;border:none;font-size:13px;font-weight:600;padding:11px;cursor:pointer;margin-top:6px;}
     .punch-card{background:linear-gradient(155deg,#17324f,#22496f);border-radius:18px;padding:20px 18px;box-shadow:var(--sh);margin-bottom:14px;color:#fff;text-align:center;}
     .punch-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.72);}
     .punch-dot{width:8px;height:8px;border-radius:50%;background:#6b7790;flex-shrink:0;transition:background .3s;}
@@ -502,6 +511,25 @@
 </div>
 <div id="cards"></div>
 <div id="empty" style="display:none"><div class="eico">👕</div><p>Aucune commande.<br>Appuie sur <strong>+</strong> pour démarrer.</p></div>
+<div class="manual-overlay" id="manual-overlay">
+  <div class="manual-bg" id="manual-bg"></div>
+  <div class="manual-card">
+    <div class="manual-title">✏️ Saisie manuelle</div>
+    <label class="flbl">Date</label>
+    <input class="finp" id="h-date" type="date">
+    <div class="finp-row" style="margin-top:10px">
+      <div><label class="flbl">Début</label><input class="finp" id="h-start" type="time"></div>
+      <div><label class="flbl">Fin</label><input class="finp" id="h-end" type="time"></div>
+    </div>
+    <label class="flbl" style="margin-top:10px">Pause (minutes, optionnel)</label>
+    <input class="finp" id="h-break" type="number" step="5" min="0" placeholder="Ex. 30">
+    <div class="h-preview" id="h-preview">Durée calculée&nbsp;: <strong id="h-preview-val">—</strong></div>
+    <label class="flbl" style="margin-top:10px">Note (optionnel)</label>
+    <input class="finp" id="h-note" type="text" placeholder="Ex. Tournée Toulon + La Seyne">
+    <button class="btn-save" id="h-save" style="margin-top:14px">✓ Enregistrer la journée</button>
+    <button class="manual-cancel" id="manual-cancel">Annuler</button>
+  </div>
+</div>
 <div class="pe-overlay" id="pe-overlay">
   <div class="pe-bg" id="pe-bg"></div>
   <div class="pe-card">
@@ -572,21 +600,7 @@
       </div>
     </div>
 
-    <div class="punch-or">— ou saisie manuelle —</div>
-    <div class="hours-add-card">
-      <label class="flbl">Date</label>
-      <input class="finp" id="h-date" type="date">
-      <div class="finp-row" style="margin-top:10px">
-        <div><label class="flbl">Début</label><input class="finp" id="h-start" type="time"></div>
-        <div><label class="flbl">Fin</label><input class="finp" id="h-end" type="time"></div>
-      </div>
-      <label class="flbl" style="margin-top:10px">Pause (minutes, optionnel)</label>
-      <input class="finp" id="h-break" type="number" step="5" min="0" placeholder="Ex. 30">
-      <div class="h-preview" id="h-preview">Durée calculée&nbsp;: <strong id="h-preview-val">\u2014</strong></div>
-      <label class="flbl" style="margin-top:10px">Note (optionnel)</label>
-      <input class="finp" id="h-note" type="text" placeholder="Ex. Tournée Toulon + La Seyne">
-      <button class="btn-save" id="h-save" style="margin-top:14px">✓ Enregistrer la journée</button>
-    </div>
+    <button class="manual-open" id="manual-open">✏️ Saisie manuelle d'une journée</button>
 
     <div class="hours-summary">
       <div class="hsum-pill"><div class="hsum-num" id="hsum-week">0h</div><div class="hsum-lbl">Cette semaine</div></div>
@@ -1408,12 +1422,6 @@ function saveHours(){
 }
 
 function openHoursScreen(){
-  document.getElementById("h-date").value=todayISO();
-  document.getElementById("h-start").value="";
-  document.getElementById("h-end").value="";
-  document.getElementById("h-break").value="";
-  document.getElementById("h-note").value="";
-  updateHoursPreview();
   document.getElementById("hours-screen").classList.add("open");
   renderPunch();
   // Affiche immédiatement le cache local, puis rafraîchit depuis le serveur
@@ -1424,6 +1432,21 @@ function openHoursScreen(){
 document.getElementById("hours-back").addEventListener("click",function(){
   document.getElementById("hours-screen").classList.remove("open");
 });
+
+// Fenêtre de saisie manuelle
+function openManualEntry(){
+  document.getElementById("h-date").value=todayISO();
+  document.getElementById("h-start").value="";
+  document.getElementById("h-end").value="";
+  document.getElementById("h-break").value="";
+  document.getElementById("h-note").value="";
+  updateHoursPreview();
+  document.getElementById("manual-overlay").classList.add("open");
+}
+function closeManualEntry(){ document.getElementById("manual-overlay").classList.remove("open"); }
+document.getElementById("manual-open").addEventListener("click",openManualEntry);
+document.getElementById("manual-cancel").addEventListener("click",closeManualEntry);
+document.getElementById("manual-bg").addEventListener("click",closeManualEntry);
 
 // Calcule la durée en heures décimales à partir de début/fin (HH:MM), gère le passage à minuit
 function computeDuration(start,end,breakMin){
@@ -1490,6 +1513,7 @@ document.getElementById("h-save").addEventListener("click",function(){
   document.getElementById("h-break").value="";
   document.getElementById("h-note").value="";
   updateHoursPreview();
+  closeManualEntry();
   toast("Journ\u00e9e enregistr\u00e9e \u2714 ("+fmtH(hours)+")");
 });
 

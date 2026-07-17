@@ -288,6 +288,8 @@
     .waze-btn:active{opacity:.85;color:#fff;}
     .card-dates{display:flex;gap:7px;padding:0 16px 12px;flex-wrap:wrap;}
     .dchip{font-size:11px;background:var(--mist);color:#4a5b72;padding:6px 11px;border-radius:9px;font-weight:600;}
+    .dchip.ok{background:#e3f5ec;color:var(--gn);font-weight:700;}
+    .dchip .okdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gn);margin-left:7px;vertical-align:middle;}
     .card-actions{border-top:1px solid #eef1f6;display:flex;align-items:center;padding:10px 12px;gap:7px;}
     .sbtn{flex:1;font-size:9.5px;font-weight:800;border:1.5px solid;border-radius:11px;padding:11px 2px;cursor:pointer;background:#fff;text-align:center;transition:.15s;min-height:46px;letter-spacing:.2px;}
     .sbtn.bc2{border-color:#e7d3ab;color:var(--or);}.sbtn.bv2{border-color:#dcccec;color:var(--vi);}.sbtn.bl2{border-color:#c4d9f0;color:var(--bl);}.sbtn.bt2{border-color:#bce0cd;color:var(--gn);}
@@ -1099,6 +1101,9 @@ function buildCard(c){
   var sameAddr=collectAddr===deliverAddr;
 
   var coOv=isOv(c.collectDate,c.status);var deOv=isOv(c.deliverDate,c.status);
+  // Étape franchie -> pastille verte : collecte faite dès le passage en traitement, livraison faite quand terminé
+  var coDone=(c.status==="traitement"||c.status==="livraison"||c.status==="termine");
+  var deDone=(c.status==="termine");
 
   var addrRow="";
   if(sameAddr && collectAddr){
@@ -1134,8 +1139,8 @@ function buildCard(c){
     +"</div></div>"
     +commentLine
     +addrRow
-    +"<div class='card-dates'><div class='dchip"+(coOv?" ov":"")+"'>&#128197; Collecte : "+fmtDateTime(c.collectDate,c.collectTime)+"</div>"
-    +"<div class='dchip"+(deOv?" ov":"")+"'>&#10003; Livraison : "+fmtDateTime(c.deliverDate,c.deliverTime)+"</div></div>"
+    +"<div class='card-dates'><div class='dchip"+(coDone?" ok":(coOv?" ov":""))+"'>&#128197; Collecte : "+fmtDateTime(c.collectDate,c.collectTime)+(coDone?"<span class='okdot'></span>":"")+"</div>"
+    +"<div class='dchip"+(deDone?" ok":(deOv?" ov":""))+"'>&#10003; Livraison : "+fmtDateTime(c.deliverDate,c.deliverTime)+(deDone?"<span class='okdot'></span>":"")+"</div></div>"
     +"<div class='card-actions'><button class='sbtn bc2"+acBc+"' data-a='status' data-v='collecte'>&#128230; Collecte</button>"
     +"<button class='sbtn bv2"+acBv+"' data-a='status' data-v='traitement'>&#129529; Traitement</button>"
     +"<button class='sbtn bl2"+acBl+"' data-a='status' data-v='livraison'>&#128666; Livraison</button>"

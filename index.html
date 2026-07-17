@@ -1068,7 +1068,7 @@ function renderPlanning(){
         // Si le dernier segment contient un code postal, prendre juste les mots non numériques
         city=city.replace(/^\d+\s*/,"").trim();
         var icon=type==="collecte"?"&#128230;":"&#128666;";
-        var isOkCollecte = type==="collecte" && c.status==="traitement";
+        var isOkCollecte = type==="collecte" && c.status!=="collecte";
         var isOkLivraison = type==="livraison" && c.status==="termine";
         var isOk = isOkCollecte || isOkLivraison;
         var isTermine = c.status==="termine";

@@ -290,6 +290,11 @@
     .dchip{font-size:11px;background:var(--mist);color:#4a5b72;padding:6px 11px;border-radius:9px;font-weight:600;}
     .dchip.ok{background:#e3f5ec;color:var(--gn);font-weight:700;}
     .dchip .okdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gn);margin-left:7px;vertical-align:middle;}
+    .rdv-check{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:#c0362e;margin-top:8px;cursor:pointer;user-select:none;}
+    .rdv-check input{width:16px;height:16px;accent-color:#e8342a;cursor:pointer;}
+    @keyframes rdvBlink{0%,55%{opacity:1;}56%,100%{opacity:.18;}}
+    .rdv-blink{color:#e8342a;font-weight:800;animation:rdvBlink .9s steps(1,end) infinite;}
+    .rdv-pin{margin-right:2px;}
     .card-actions{border-top:1px solid #eef1f6;display:flex;align-items:center;padding:10px 12px;gap:7px;}
     .sbtn{flex:1;font-size:9.5px;font-weight:800;border:1.5px solid;border-radius:11px;padding:11px 2px;cursor:pointer;background:#fff;text-align:center;transition:.15s;min-height:46px;letter-spacing:.2px;}
     .sbtn.bc2{border-color:#e7d3ab;color:var(--or);}.sbtn.bv2{border-color:#dcccec;color:var(--vi);}.sbtn.bl2{border-color:#c4d9f0;color:var(--bl);}.sbtn.bt2{border-color:#bce0cd;color:var(--gn);}
@@ -680,6 +685,7 @@
             <input class="finp" id="fcolh" type="time" style="flex:1">
             <button type="button" class="now-btn" id="now-collect-btn">NOW</button>
           </div>
+          <label class="rdv-check"><input type="checkbox" id="fcolrdv"> &#128204; Rendez-vous (heure imp&eacute;rative)</label>
         </div>
       </div>
       <div class="finp-row">
@@ -690,6 +696,7 @@
             <input class="finp" id="fdelh" type="time" style="flex:1">
             <button type="button" class="now-btn" id="now-deliver-btn">NOW</button>
           </div>
+          <label class="rdv-check"><input type="checkbox" id="fdelrdv"> &#128204; Rendez-vous (heure imp&eacute;rative)</label>
         </div>
       </div>
 
@@ -910,8 +917,10 @@ function backupToSheet(){
       deliverAddress:c.deliverAddress||c.address||"",
       collectDate:c.collectDate||"",
       collectTime:c.collectTime||"",
+      collectRdv:c.collectRdv?1:0,
       deliverDate:c.deliverDate||"",
       deliverTime:c.deliverTime||"",
+      deliverRdv:c.deliverRdv?1:0,
       bags:c.bags||0,
       comment:c.comment||"",
       alerte:c.alerte?1:0,
@@ -1086,6 +1095,14 @@ function renderPlanning(){
   el.innerHTML=html;
 }
 
+// Date + heure pour la puce ; si rendez-vous non encore honoré, l'heure clignote en rouge
+function dchipDT(iso,time,rdv,done){
+  var d=fmtDate(iso);
+  if(!iso||!time) return d;
+  var t=(rdv&&!done)?"<span class='rdv-blink'>"+time+"</span>":time;
+  return d+" \u00e0 "+t;
+}
+
 function buildCard(c){
   var div=document.createElement("div");
   var statusClassMap={collecte:"sc",traitement:"sv",livraison:"sl",termine:"st"};
@@ -1104,6 +1121,7 @@ function buildCard(c){
   // Étape franchie -> pastille verte : collecte faite dès le passage en traitement, livraison faite quand terminé
   var coDone=(c.status==="traitement"||c.status==="livraison"||c.status==="termine");
   var deDone=(c.status==="termine");
+  var coRdv=!!c.collectRdv, deRdv=!!c.deliverRdv;
 
   var addrRow="";
   if(sameAddr && collectAddr){
@@ -1139,8 +1157,8 @@ function buildCard(c){
     +"</div></div>"
     +commentLine
     +addrRow
-    +"<div class='card-dates'><div class='dchip"+(coDone?" ok":(coOv?" ov":""))+"'>&#128197; Collecte : "+fmtDateTime(c.collectDate,c.collectTime)+(coDone?"<span class='okdot'></span>":"")+"</div>"
-    +"<div class='dchip"+(deDone?" ok":(deOv?" ov":""))+"'>&#10003; Livraison : "+fmtDateTime(c.deliverDate,c.deliverTime)+(deDone?"<span class='okdot'></span>":"")+"</div></div>"
+    +"<div class='card-dates'><div class='dchip"+(coDone?" ok":(coOv?" ov":""))+"'>"+(coRdv?"<span class='rdv-pin'>&#128204;</span>":"")+"&#128197; Collecte : "+dchipDT(c.collectDate,c.collectTime,coRdv,coDone)+(coDone?"<span class='okdot'></span>":"")+"</div>"
+    +"<div class='dchip"+(deDone?" ok":(deOv?" ov":""))+"'>"+(deRdv?"<span class='rdv-pin'>&#128204;</span>":"")+"&#10003; Livraison : "+dchipDT(c.deliverDate,c.deliverTime,deRdv,deDone)+(deDone?"<span class='okdot'></span>":"")+"</div></div>"
     +"<div class='card-actions'><button class='sbtn bc2"+acBc+"' data-a='status' data-v='collecte'>&#128230; Collecte</button>"
     +"<button class='sbtn bv2"+acBv+"' data-a='status' data-v='traitement'>&#129529; Traitement</button>"
     +"<button class='sbtn bl2"+acBl+"' data-a='status' data-v='livraison'>&#128666; Livraison</button>"
@@ -1306,8 +1324,10 @@ function openModal(c){
   document.getElementById("fbags").value=c?(c.bags?""+c.bags:""):"";
   document.getElementById("fcol").value=c?(c.collectDate||today):today;
   document.getElementById("fcolh").value=c?(c.collectTime||""):"";
+  document.getElementById("fcolrdv").checked=c?!!c.collectRdv:false;
   document.getElementById("fdel").value=c?(c.deliverDate||""):"";
   document.getElementById("fdelh").value=c?(c.deliverTime||""):"";
+  document.getElementById("fdelrdv").checked=c?!!c.deliverRdv:false;
   document.getElementById("fstat").value=c?c.status:"collecte";
   document.getElementById("fcomment").value=c?(c.comment||""):"";
   document.getElementById("fname").classList.remove("err");
@@ -1342,7 +1362,7 @@ document.getElementById("fsave").addEventListener("click",function(){
   var collectAddress=document.getElementById("faddr-collect").value.trim();
   var linked=document.getElementById("link-addresses").checked;
   var deliverAddress=linked?collectAddress:document.getElementById("faddr-deliver").value.trim();
-  var data={name:name,phone:document.getElementById("fphone").value.trim(),collectAddress:collectAddress,deliverAddress:deliverAddress,address:collectAddress,bags:parseInt(document.getElementById("fbags").value,10)||0,collectDate:document.getElementById("fcol").value,collectTime:document.getElementById("fcolh").value,deliverDate:document.getElementById("fdel").value,deliverTime:document.getElementById("fdelh").value,status:document.getElementById("fstat").value,comment:document.getElementById("fcomment").value.trim()};
+  var data={name:name,phone:document.getElementById("fphone").value.trim(),collectAddress:collectAddress,deliverAddress:deliverAddress,address:collectAddress,bags:parseInt(document.getElementById("fbags").value,10)||0,collectDate:document.getElementById("fcol").value,collectTime:document.getElementById("fcolh").value,collectRdv:document.getElementById("fcolrdv").checked,deliverDate:document.getElementById("fdel").value,deliverTime:document.getElementById("fdelh").value,deliverRdv:document.getElementById("fdelrdv").checked,status:document.getElementById("fstat").value,comment:document.getElementById("fcomment").value.trim()};
   if(id){var idx=clients.findIndex(function(c){return c.id===id;});if(idx!==-1)clients[idx]=Object.assign({},clients[idx],data);toast("Mis à jour ✔");}
   else{data.id=uid();data.num=clients.length+1;clients.push(data);toast("Commande ajoutée ✔ · N°"+data.num);}
   render();pushClients();closeModal();

@@ -281,6 +281,7 @@
     .cname{font-size:17px;font-weight:800;color:var(--navy);letter-spacing:-.2px;}
     .cbags{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600;}
     .sbadge{flex-shrink:0;font-size:9.5px;font-weight:800;padding:5px 11px;border-radius:20px;text-transform:uppercase;letter-spacing:.7px;}
+    .sbadge.rdv{background:#e8342a!important;color:#fff!important;animation:rdvBlink .9s steps(1,end) infinite;}
     .sbadge.bc{background:#faf1e0;color:var(--or);}.sbadge.bv{background:#f3edf8;color:var(--vi);}.sbadge.bl{background:#e8f1fb;color:var(--bl);}.sbadge.bt{background:#e7f4ed;color:var(--gn);}
     .card-addr{display:flex;align-items:center;gap:8px;padding:0 16px 8px;}
     .addr-txt{font-size:12.5px;color:#5a6b80;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;}
@@ -1122,6 +1123,7 @@ function buildCard(c){
   var coDone=(c.status==="traitement"||c.status==="livraison"||c.status==="termine");
   var deDone=(c.status==="termine");
   var coRdv=!!c.collectRdv, deRdv=!!c.deliverRdv;
+  var anyPendingRdv=(coRdv&&!coDone)||(deRdv&&!deDone);
 
   var addrRow="";
   if(sameAddr && collectAddr){
@@ -1152,7 +1154,7 @@ function buildCard(c){
     +infoBadge+alertBadge+"</div>"
     +"<div style='display:flex;align-items:center;gap:6px'>"
     +"<span style='font-size:10px;font-weight:800;color:#aaa;white-space:nowrap'>N°"+(c.num||"?")+"</span>"
-    +"<span class='sbadge "+bcls+"'>"+slbl+"</span>"
+    +"<span class='sbadge "+bcls+(anyPendingRdv?" rdv":"")+"'>"+slbl+"</span>"
     +phoneBtn
     +"</div></div>"
     +commentLine

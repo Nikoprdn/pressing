@@ -345,6 +345,11 @@
     .tour-unknown{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
     .tour-unknown-lbl{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
     .tour-chip{font-size:9.5px;font-weight:700;background:var(--mist);color:#4a5b72;border-radius:8px;padding:3px 7px;cursor:pointer;}
+    .tour-eta-bar{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+    .tour-eta-btn{border:none;border-radius:10px;padding:7px 11px;font-family:inherit;font-size:10.5px;font-weight:800;letter-spacing:.3px;color:#fff;background:linear-gradient(140deg,#3f74ab,#1d4068);cursor:pointer;flex-shrink:0;}
+    .tour-eta-btn:disabled{opacity:.55;}
+    .tour-eta-msg{font-size:9.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tb-eta{display:block;margin-top:2px;font-size:9px;font-weight:800;color:#fff;background:var(--navy);border-radius:6px;padding:1px 0;}
     .rdv-check{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#e8342a;letter-spacing:.5px;margin-top:8px;cursor:pointer;user-select:none;}
     .rdv-check input{width:16px;height:16px;accent-color:#e8342a;cursor:pointer;}
     @keyframes rdvBlink{0%,55%{opacity:1;}56%,100%{opacity:.18;}}
@@ -615,8 +620,7 @@
 </div>
 <button class="clock-tab" id="clock-tab" title=" ">🕐</button>
 
-<!-- MENU WAZE PORTS -->
-<div class="waze-menu-overlay" id="waze-menu-overlay"></div>
+<!-- MENU WAZE PORTS --><div class="waze-menu-overlay" id="waze-menu-overlay"></div>
 <div class="waze-menu" id="waze-menu" style="display:none">
   <div class="waze-caret" id="waze-caret"></div>
   <div class="waze-menu-head">
@@ -784,6 +788,8 @@
 // ║  URL de ton Worker Cloudflare — déjà configurée          ║
 // ╚══════════════════════════════════════════════════════════╝
 var API = "https://llf-pressing.nicolas7lejeune.workers.dev";
+// Worker "apitom" (proxy TomTom, route /travel) — remplace par son URL exacte
+var ETA_API = "https://apitom.nicolas7lejeune.workers.dev";
 
 // URL du Google Apps Script de sauvegarde (vide = backup désactivé)
 // Colle ici l'URL obtenue après déploiement (voir backup_apps_script.gs)
@@ -1079,22 +1085,22 @@ function getRangeStart(offset){
 // ---- Tournée : axe littoral Mandelieu -> Monaco ----
 // km = distance approximative le long de la côte depuis Mandelieu
 var TOUR_PORTS=[
-  {n:"Théoule",km:0,k:["theoule","theoule sur mer","la galere","figueirette"]},
-  {n:"Mandelieu",km:1.5,k:["mandelieu","la napoule","napoule"]},
-  {n:"Cannes",km:6,k:["cannes","vieux port cannes","port canto","pierre canto","palm beach","le cannet"]},
-  {n:"Golfe-Juan",km:10,k:["golfe juan","vallauris","camille rayon"]},
-  {n:"Juan-les-Pins",km:12,k:["juan les pins","port gallice","gallice"]},
-  {n:"Antibes",km:14,k:["antibes","port vauban","vauban","olivette","les salis"]},
-  {n:"Villeneuve-Loubet",km:18,k:["villeneuve loubet","marina baie des anges","baie des anges"]},
-  {n:"Cagnes-sur-Mer",km:21,k:["cagnes","cagnes sur mer","cros de cagnes"]},
-  {n:"St-Laurent-du-Var",km:24,k:["saint laurent du var","st laurent du var","saint laurent","st laurent"]},
-  {n:"Nice",km:28,k:["nice","port lympia","lympia","carras"]},
-  {n:"Villefranche",km:32,k:["villefranche","villefranche sur mer","la darse"]},
-  {n:"St-Jean-Cap-Ferrat",km:34,k:["saint jean cap ferrat","st jean cap ferrat","cap ferrat"]},
-  {n:"Beaulieu",km:35.5,k:["beaulieu","beaulieu sur mer"]},
-  {n:"Èze",km:37,k:["eze","eze sur mer","silva maris"]},
-  {n:"Cap-d'Ail",km:38.5,k:["cap d ail","cap dail"]},
-  {n:"Monaco",km:40,k:["monaco","port hercule","hercule","fontvieille","monte carlo"]}
+  {n:"Théoule",km:0,lat:43.5063,lon:6.9403,k:["theoule","theoule sur mer","la galere","figueirette"]},
+  {n:"Mandelieu",km:1.5,lat:43.5225,lon:6.94,k:["mandelieu","la napoule","napoule"]},
+  {n:"Cannes",km:6,lat:43.55,lon:7.017,k:["cannes","vieux port cannes","port canto","pierre canto","palm beach","le cannet"]},
+  {n:"Golfe-Juan",km:10,lat:43.5667,lon:7.0783,k:["golfe juan","vallauris","camille rayon"]},
+  {n:"Juan-les-Pins",km:12,lat:43.5667,lon:7.1053,k:["juan les pins","port gallice","gallice"]},
+  {n:"Antibes",km:14,lat:43.586,lon:7.128,k:["antibes","port vauban","vauban","olivette","les salis"]},
+  {n:"Villeneuve-Loubet",km:18,lat:43.63,lon:7.135,k:["villeneuve loubet","marina baie des anges","baie des anges"]},
+  {n:"Cagnes-sur-Mer",km:21,lat:43.657,lon:7.16,k:["cagnes","cagnes sur mer","cros de cagnes"]},
+  {n:"St-Laurent-du-Var",km:24,lat:43.658,lon:7.187,k:["saint laurent du var","st laurent du var","saint laurent","st laurent"]},
+  {n:"Nice",km:28,lat:43.695,lon:7.286,k:["nice","port lympia","lympia","carras"]},
+  {n:"Villefranche",km:32,lat:43.704,lon:7.311,k:["villefranche","villefranche sur mer","la darse"]},
+  {n:"St-Jean-Cap-Ferrat",km:34,lat:43.69,lon:7.332,k:["saint jean cap ferrat","st jean cap ferrat","cap ferrat"]},
+  {n:"Beaulieu",km:35.5,lat:43.706,lon:7.334,k:["beaulieu","beaulieu sur mer"]},
+  {n:"Èze",km:37,lat:43.723,lon:7.362,k:["eze","eze sur mer","silva maris"]},
+  {n:"Cap-d'Ail",km:38.5,lat:43.728,lon:7.402,k:["cap d ail","cap dail"]},
+  {n:"Monaco",km:40,lat:43.735,lon:7.426,k:["monaco","port hercule","hercule","fontvieille","monte carlo"]}
 ];
 var TOUR_MAX_KM=40;
 var tourOpen=false;   // replié au chargement de la page
@@ -1131,6 +1137,58 @@ function tourPort(addr){
 }
 
 // En-tête cliquable (replier / déplier)
+// ---- Temps de trajet (via le Worker "apitom", route /travel — la clé reste côté serveur) ----
+var tourEta={};        // "id|type" -> minutes
+var tourEtaTime="";    // heure du dernier calcul
+var tourPlacedRef=[];  // escales positionnées, pour le calcul
+
+function tourFetchEtas(){
+  var msg=document.getElementById("tour-eta-msg");
+  var btn=document.getElementById("tour-eta-btn");
+  function say(t){ if(msg) msg.textContent=t; }
+  function done(){ if(btn) btn.disabled=false; }
+  if(!navigator.geolocation){ say("Géolocalisation indisponible"); return; }
+  if(!tourPlacedRef.length){ say("Aucune escale placée"); return; }
+  if(btn) btn.disabled=true;
+  say("Localisation…");
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var orig=pos.coords.latitude.toFixed(6)+","+pos.coords.longitude.toFixed(6);
+    var stops=tourPlacedRef.slice();
+    say("Calcul des trajets…");
+    // Un appel /travel par escale ; un échec isolé n'empêche pas les autres
+    var jobs=stops.map(function(o){
+      var dest=o.port.lat+","+o.port.lon;
+      var url=ETA_API+"/travel?orig="+encodeURIComponent(orig)+"&dest="+encodeURIComponent(dest);
+      return fetch(url)
+        .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          var d=res.d;
+          var s=d&&d.routes&&d.routes[0]&&d.routes[0].summary;
+          if(s&&typeof s.travelTimeInSeconds==="number"){
+            tourEta[o.key]=Math.max(1,Math.round(s.travelTimeInSeconds/60));
+            return "ok";
+          }
+          return (d&&d.error)?"api":"vide";
+        })["catch"](function(){ return "reseau"; });
+    });
+    Promise.all(jobs).then(function(results){
+      var ok=results.filter(function(r){ return r==="ok"; }).length;
+      if(ok===0){
+        say(results.indexOf("reseau")>=0?"Worker injoignable — vérifie l'URL":"Aucun trajet calculé");
+        done();
+        return;
+      }
+      var now=new Date();
+      tourEtaTime=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2)
+                 +(ok<results.length?" ("+ok+"/"+results.length+")":"");
+      renderTour(tourIso);
+    });
+  },function(err){
+    say(err&&err.code===1?"Localisation refusée":"Localisation impossible");
+    done();
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+}
+
 function tourHead(n){
   var lbl=n>0?(n+" escale"+(n>1?"s":"")):"aucune escale";
   return "<div class='tour-head'>"
@@ -1166,9 +1224,10 @@ function renderTour(iso){
     var c=st.c;
     var addr=st.type==="collecte"?(c.collectAddress||c.address||""):(c.deliverAddress||c.address||"");
     var p=tourPort(addr);
-    var o={c:c,type:st.type,time:st.time,order:i+1,port:p};
+    var o={c:c,type:st.type,time:st.time,order:i+1,port:p,key:tourKey(c.id,st.type)};
     if(p) placed.push(o); else unknown.push(o);
   });
+  tourPlacedRef=placed;
 
   // Position horizontale : 10% -> 90% de la largeur
   placed.forEach(function(o){
@@ -1186,11 +1245,14 @@ function renderTour(iso){
     o.lane=i;
   });
   var laneCount=Math.max(1,lanes.length);
-  var LANE_STEP=38, BASE=30;
+  var hasEta=placed.some(function(o){ return tourEta[o.key]!=null; });
+  var LANE_STEP=hasEta?50:38, BASE=30;
   var plotH=BASE+laneCount*LANE_STEP+8;
 
   var html="<div class='tour-card'>"+tourHead(stops.length)
     +"<div class='tour-body'"+(tourOpen?"":" style='display:none'")+">"
+    +"<div class='tour-eta-bar'><button class='tour-eta-btn' id='tour-eta-btn'>&#9201; Temps de trajet</button>"
+    +"<span class='tour-eta-msg' id='tour-eta-msg'>"+(tourEtaTime?"calcul&eacute; &agrave; "+tourEtaTime:"")+"</span></div>"
     +"<div class='tour-plot' style='height:"+plotH+"px'>"
     +"<div class='tour-track'></div>";
 
@@ -1216,6 +1278,7 @@ function renderTour(iso){
       +"<div class='tour-box'>"
         +"<span class='tb-name'>"+(rdv?"<span class='tb-pin'>&#128204;</span>":"")+icon+" "+esc(c.name)+"</span>"
         +"<span class='tb-port'>"+esc(o.port.n)+"</span>"
+        +(tourEta[o.key]!=null?"<span class='tb-eta'>"+tourEta[o.key]+" min</span>":"")
       +"</div></div>";
   });
 
@@ -1531,6 +1594,10 @@ document.getElementById("plan").addEventListener("click",function(e){
   renderTour(tourIso);
 });
 document.getElementById("tour").addEventListener("click",planItemClick);
+// Temps de trajet TomTom
+document.getElementById("tour").addEventListener("click",function(e){
+  if(e.target.closest("#tour-eta-btn")){ e.stopPropagation(); tourFetchEtas(); }
+});
 // Replier / déplier la tournée
 document.getElementById("tour").addEventListener("click",function(e){
   if(!e.target.closest(".tour-head")) return;

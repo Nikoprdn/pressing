@@ -340,7 +340,10 @@
     .tour-stop.sl .tb-name{color:var(--bl);}
     .tour-stop.st .tb-name{color:var(--gn);}
     .tb-port{display:block;font-size:8px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);position:relative;height:16px;align-items:flex-start;}
+    .tour-end-dim{opacity:.22;}
+    .tour-me-line{position:absolute;bottom:16px;width:2px;transform:translateX(-50%);background:repeating-linear-gradient(to bottom,var(--navy) 0 4px,transparent 4px 8px);opacity:.42;}
+    .tour-me{position:absolute;top:-3px;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.3px;text-transform:none;border-radius:8px;padding:2px 7px;white-space:nowrap;box-shadow:0 2px 7px rgba(10,20,40,.3);}
     .tour-empty{font-size:11px;color:var(--muted);text-align:center;padding:10px 0;}
     .tour-unknown{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
     .tour-unknown-lbl{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
@@ -1137,24 +1140,53 @@ function tourPort(addr){
 }
 
 // En-tête cliquable (replier / déplier)
+// Projette une position GPS sur l'axe littoral : renvoie le km le long de la côte
+// et l'écart (km) par rapport à l'axe. Approximation équirectangulaire, suffisante ici.
+var tourMe=null;   // position sur l'axe, en %
+function tourProject(lat,lon){
+  var R=111.32, c=Math.cos(lat*Math.PI/180);
+  function xy(la,lo){ return {x:lo*R*c, y:la*R}; }
+  var p=xy(lat,lon), best=null;
+  var pts=TOUR_PORTS.filter(function(o){ return typeof o.lat==="number"; });
+  for(var i=0;i<pts.length-1;i++){
+    var a=xy(pts[i].lat,pts[i].lon), b=xy(pts[i+1].lat,pts[i+1].lon);
+    var dx=b.x-a.x, dy=b.y-a.y, len2=dx*dx+dy*dy;
+    var t=len2?(((p.x-a.x)*dx+(p.y-a.y)*dy)/len2):0;
+    if(t<0)t=0; if(t>1)t=1;
+    var px=a.x+t*dx, py=a.y+t*dy;
+    var d=Math.sqrt((p.x-px)*(p.x-px)+(p.y-py)*(p.y-py));
+    if(!best||d<best.d) best={d:d,km:pts[i].km+t*(pts[i+1].km-pts[i].km)};
+  }
+  return best;
+}
+function tourSetMe(lat,lon){
+  var r=tourProject(lat,lon);
+  if(!r||r.d>25){ tourMe=null; return false; }   // trop loin de l'axe
+  var km=Math.max(0,Math.min(TOUR_MAX_KM,r.km));
+  tourMe=10+(km/TOUR_MAX_KM)*80;
+  return true;
+}
+
 // ---- Temps de trajet (via le Worker "apitom", route /travel — la clé reste côté serveur) ----
 var tourEta={};        // "id|type" -> minutes
 var tourEtaTime="";    // heure du dernier calcul
 var tourPlacedRef=[];  // escales positionnées, pour le calcul
 
 function tourFetchEtas(){
-  var msg=document.getElementById("tour-eta-msg");
-  var btn=document.getElementById("tour-eta-btn");
-  function say(t){ if(msg) msg.textContent=t; }
-  function done(){ if(btn) btn.disabled=false; }
+  function say(t){ var m=document.getElementById("tour-eta-msg"); if(m) m.textContent=t; }
+  function done(){ var b=document.getElementById("tour-eta-btn"); if(b) b.disabled=false; }
+  function busy(){ var b=document.getElementById("tour-eta-btn"); if(b) b.disabled=true; }
   if(!navigator.geolocation){ say("Géolocalisation indisponible"); return; }
   if(!tourPlacedRef.length){ say("Aucune escale placée"); return; }
-  if(btn) btn.disabled=true;
+  busy();
   say("Localisation…");
   navigator.geolocation.getCurrentPosition(function(pos){
     var orig=pos.coords.latitude.toFixed(6)+","+pos.coords.longitude.toFixed(6);
+    var onAxis=tourSetMe(pos.coords.latitude,pos.coords.longitude);
     var stops=tourPlacedRef.slice();
-    say("Calcul des trajets…");
+    renderTour(tourIso);           // affiche tout de suite ta position sur l'axe
+    busy();
+    say(onAxis?"Calcul des trajets…":"Hors axe — calcul en cours…");
     // Un appel /travel par escale ; un échec isolé n'empêche pas les autres
     var jobs=stops.map(function(o){
       var dest=o.port.lat+","+o.port.lon;
@@ -1254,7 +1286,8 @@ function renderTour(iso){
     +"<div class='tour-eta-bar'><button class='tour-eta-btn' id='tour-eta-btn'>&#9201; Temps de trajet</button>"
     +"<span class='tour-eta-msg' id='tour-eta-msg'>"+(tourEtaTime?"calcul&eacute; &agrave; "+tourEtaTime:"")+"</span></div>"
     +"<div class='tour-plot' style='height:"+plotH+"px'>"
-    +"<div class='tour-track'></div>";
+    +"<div class='tour-track'></div>"
+    +(tourMe!=null?"<div class='tour-me-line' style='left:"+tourMe+"%;height:"+(plotH-16)+"px'></div>":"");
 
   // Repères des ports concernés
   var ticks={};
@@ -1282,7 +1315,11 @@ function renderTour(iso){
       +"</div></div>";
   });
 
-  html+="</div><div class='tour-ends'><span>Mandelieu</span><span>Monaco</span></div>";
+  html+="</div><div class='tour-ends'>"
+    +"<span"+(tourMe!=null&&tourMe<28?" class='tour-end-dim'":"")+">Mandelieu</span>"
+    +(tourMe!=null?"<span class='tour-me' style='left:"+tourMe+"%'>&#128205; moi</span>":"")
+    +"<span"+(tourMe!=null&&tourMe>72?" class='tour-end-dim'":"")+">Monaco</span>"
+    +"</div>";
 
   if(unknown.length){
     html+="<div class='tour-unknown'><span class='tour-unknown-lbl'>Port non reconnu :</span>";

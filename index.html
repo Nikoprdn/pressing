@@ -321,20 +321,21 @@
     .tour-track{position:absolute;left:0;right:0;bottom:16px;height:8px;border-radius:6px;background:linear-gradient(90deg,#dbe6f3 0%,#9fb9d8 50%,var(--navy) 100%);}
     .tour-tick{position:absolute;bottom:16px;width:2px;height:8px;background:rgba(255,255,255,.85);transform:translateX(-50%);}
     .tour-stem{position:absolute;width:2px;background:#c2d9f1;transform:translateX(-50%);}
-    .tour-dot{position:absolute;bottom:12px;width:17px;height:17px;border-radius:50%;background:var(--bl);color:#fff;font-size:9px;font-weight:800;line-height:17px;text-align:center;transform:translateX(-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+    .tour-mark{position:absolute;bottom:12px;width:5px;height:16px;border-radius:3px;transform:translateX(-50%);box-shadow:0 1px 4px rgba(10,20,40,.35);}
+    .tour-mark.sc{background:var(--or);}
+    .tour-mark.sv{background:var(--vi);}
+    .tour-mark.sl{background:var(--bl);}
+    .tour-mark.st{background:var(--gn);}
+    .tour-mark.fin{opacity:.55;}
+    .tb-num{display:inline-block;min-width:12px;height:12px;line-height:12px;border-radius:4px;background:rgba(22,49,80,.10);color:var(--navy);font-size:8px;font-weight:800;text-align:center;margin-right:4px;padding:0 2px;vertical-align:middle;}
     .tour-stop{position:absolute;width:80px;transform:translateX(-50%);cursor:pointer;}
     .tour-box{background:var(--mist);border:1px solid var(--line);border-radius:9px;padding:4px 5px;text-align:center;line-height:1.3;}
     .tour-stop.sc .tour-box{background:#faf1e0;border-color:#ecd6a6;}
     .tour-stop.sv .tour-box{background:#f3edf8;border-color:#d9cbe9;}
     .tour-stop.sl .tour-box{background:#e8f1fb;border-color:#c2d9f1;}
     .tour-stop.st .tour-box{background:#e7f4ed;border-color:#bbe0cc;}
-    .tour-dot.sc{background:var(--or);}
-    .tour-dot.sv{background:var(--vi);}
-    .tour-dot.sl{background:var(--bl);}
-    .tour-dot.st{background:var(--gn);}
     .tour-stop.rdv .tour-box{border-color:#e8342a;border-width:2px;}
     .tour-stop.fin{opacity:.72;}
-    .tour-dot.fin{opacity:.72;}
     .tb-name{display:block;font-size:9.5px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .tour-stop.sc .tb-name{color:var(--or);}
     .tour-stop.sl .tb-name{color:var(--bl);}
@@ -1305,10 +1306,10 @@ function renderTour(iso){
     var boxBottom=BASE+o.lane*LANE_STEP;
     var stemH=boxBottom-20;
     html+="<div class='tour-stem' style='left:"+o.pos+"%;bottom:20px;height:"+stemH+"px'></div>"
-      +"<div class='tour-dot "+scls+(done?" fin":"")+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
+      +"<div class='tour-mark "+scls+(done?" fin":"")+"' style='left:"+o.pos+"%'></div>"
       +"<div class='tour-stop "+scls+(done?" fin":"")+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
       +"<div class='tour-box'>"
-        +"<span class='tb-name'>"+(rdv?"<span class='tb-pin'>&#128204;</span>":"")+icon+" "+esc(c.name)+"</span>"
+        +"<span class='tb-name'><span class='tb-num'>"+o.order+"</span>"+(rdv?"<span class='tb-pin'>&#128204;</span>":"")+icon+" "+esc(c.name)+"</span>"
         +"<span class='tb-port'>"+esc(o.port.n)+"</span>"
         +(tourEta[o.key]!=null?"<span class='tb-eta'>"+tourEta[o.key]+" min</span>":"")
       +"</div></div>";

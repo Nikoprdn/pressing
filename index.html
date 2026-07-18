@@ -243,7 +243,18 @@
     .day-col.is-today .day-head{color:var(--navy);}
     .day-body{padding:8px;display:flex;flex-direction:column;gap:7px;min-height:44px;}
     .day-empty{font-size:11px;color:#b6bfce;text-align:center;padding:10px 0;}
-    .day-item{border-radius:11px;padding:8px 10px;font-size:11px;cursor:pointer;transition:transform .12s;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;border:1px solid transparent;}
+    .day-item{border-radius:11px;padding:8px 10px;font-size:11px;cursor:pointer;transition:transform .12s;display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:6px;border:1px solid transparent;}
+    .di-check{width:19px;height:19px;border-radius:6px;border:2px solid #cfd8e6;background:#fff;flex-shrink:0;cursor:pointer;position:relative;transition:background .12s,border-color .12s,transform .1s;}
+    .di-check:active{transform:scale(.88);}
+    .di-check.on::after{content:"";position:absolute;left:4px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(42deg);}
+    .day-item.dc .di-check{border-color:#e0bd72;}
+    .day-item.dc .di-check.on{background:var(--or);border-color:var(--or);}
+    .day-item.dl .di-check{border-color:#9dc0e6;}
+    .day-item.dl .di-check.on{background:var(--bl);border-color:var(--bl);}
+    .day-item.dt .di-check{border-color:#93cdae;}
+    .day-item.dt .di-check.on{background:var(--gn);border-color:var(--gn);}
+    .day-item.dc.ok-traitement .di-check{border-color:#93cdae;}
+    .day-item.dc.ok-traitement .di-check.on{background:var(--gn);border-color:var(--gn);}
     .day-item:active{transform:scale(.985);}
     .day-item.dc{background:#fbf4e6;border-color:#ecd6a6;}
     .day-item.dl{background:#eaf2fb;border-color:#c2d9f1;}
@@ -326,6 +337,7 @@
     .tour-dot.fin{opacity:.72;}
     .tb-name{display:block;font-size:9.5px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .tour-stop.sc .tb-name{color:var(--or);}
+    .tour-stop.sl .tb-name{color:var(--bl);}
     .tour-stop.st .tb-name{color:var(--gn);}
     .tb-port{display:block;font-size:8px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
@@ -1088,6 +1100,19 @@ var TOUR_MAX_KM=40;
 var tourOpen=false;   // replié au chargement de la page
 var tourIso=null;     // jour actuellement affiché
 
+// ---- Sélection manuelle des escales de la tournée ----
+var TOUR_SEL_KEY="llf_tour_selection";
+var tourSel={};
+try{ tourSel=JSON.parse(localStorage.getItem(TOUR_SEL_KEY)||"{}")||{}; }catch(e){ tourSel={}; }
+function tourKey(id,type){ return id+"|"+type; }
+function tourSelHas(id,type){ return !!tourSel[tourKey(id,type)]; }
+function tourSelToggle(id,type){
+  var k=tourKey(id,type);
+  if(tourSel[k]) delete tourSel[k]; else tourSel[k]=1;
+  try{ localStorage.setItem(TOUR_SEL_KEY,JSON.stringify(tourSel)); }catch(e){}
+  return !!tourSel[k];
+}
+
 function tourNorm(s){
   return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 }
@@ -1107,7 +1132,7 @@ function tourPort(addr){
 
 // En-tête cliquable (replier / déplier)
 function tourHead(n){
-  var lbl=n>0?(n+" livraison"+(n>1?"s":"")):"aucune livraison";
+  var lbl=n>0?(n+" escale"+(n>1?"s":"")):"aucune escale";
   return "<div class='tour-head'>"
     +"<span class='tour-title'>&#9973; Tourn&eacute;e du jour</span>"
     +"<span class='tour-count'>"+lbl+"<span class='tour-chev"+(tourOpen?" open":"")+"'>&#9662;</span></span>"
@@ -1118,28 +1143,30 @@ function renderTour(iso){
   var el=document.getElementById("tour");
   if(!el) return;
   tourIso=iso;
-  // Livraisons du jour affiché, triées par heure (= ordre de la tournée)
+  // Uniquement les escales cochées dans le récap du jour
   var stops=[];
   clients.forEach(function(c){
-    if(c.deliverDate===iso) stops.push(c);
+    if(c.collectDate===iso && tourSelHas(c.id,"collecte")) stops.push({c:c,type:"collecte",time:c.collectTime||""});
+    if(c.deliverDate===iso && tourSelHas(c.id,"livraison")) stops.push({c:c,type:"livraison",time:c.deliverTime||""});
   });
   stops.sort(function(a,b){
-    if(!a.deliverTime) return 1;
-    if(!b.deliverTime) return -1;
-    return a.deliverTime.localeCompare(b.deliverTime);
+    if(!a.time) return 1;
+    if(!b.time) return -1;
+    return a.time.localeCompare(b.time);
   });
 
   if(stops.length===0){
     el.innerHTML="<div class='tour-card'>"+tourHead(0)
-      +"<div class='tour-body'"+(tourOpen?"":" style='display:none'")+"><div class='tour-empty'>Aucune livraison ce jour</div></div></div>";
+      +"<div class='tour-body'"+(tourOpen?"":" style='display:none'")+"><div class='tour-empty'>Coche une ligne du r&eacute;capitulatif pour l'ajouter &agrave; la tourn&eacute;e</div></div></div>";
     return;
   }
 
   var placed=[],unknown=[];
-  stops.forEach(function(c,i){
-    var addr=c.deliverAddress||c.address||"";
+  stops.forEach(function(st,i){
+    var c=st.c;
+    var addr=st.type==="collecte"?(c.collectAddress||c.address||""):(c.deliverAddress||c.address||"");
     var p=tourPort(addr);
-    var o={c:c,order:i+1,port:p};
+    var o={c:c,type:st.type,time:st.time,order:i+1,port:p};
     if(p) placed.push(o); else unknown.push(o);
   });
 
@@ -1176,17 +1203,18 @@ function renderTour(iso){
 
   placed.forEach(function(o){
     var c=o.c;
-    var done=c.status==="termine";
-    // Même logique que le récap : dès que la collecte est faite (statut != collecte) -> vert, sans retour en arrière
-    var scls=(c.status==="collecte")?"sc":"st";
-    var rdv=!!c.deliverRdv&&!done;
+    var done=o.type==="collecte" ? (c.status!=="collecte") : (c.status==="termine");
+    // Même logique de couleur que le récap : étape faite -> vert, sinon orange (collecte) ou bleu (livraison)
+    var scls=done?"st":(o.type==="collecte"?"sc":"sl");
+    var rdv=(o.type==="collecte"?!!c.collectRdv:!!c.deliverRdv)&&!done;
+    var icon=o.type==="collecte"?"&#128230;":"&#128666;";
     var boxBottom=BASE+o.lane*LANE_STEP;
     var stemH=boxBottom-20;
     html+="<div class='tour-stem' style='left:"+o.pos+"%;bottom:20px;height:"+stemH+"px'></div>"
       +"<div class='tour-dot "+scls+(done?" fin":"")+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
       +"<div class='tour-stop "+scls+(done?" fin":"")+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
       +"<div class='tour-box'>"
-        +"<span class='tb-name'>"+(rdv?"<span class='tb-pin'>&#128204;</span>":"")+esc(c.name)+"</span>"
+        +"<span class='tb-name'>"+(rdv?"<span class='tb-pin'>&#128204;</span>":"")+icon+" "+esc(c.name)+"</span>"
         +"<span class='tb-port'>"+esc(o.port.n)+"</span>"
       +"</div></div>";
   });
@@ -1269,6 +1297,7 @@ function renderPlanning(){
         var infoPlanBadge=c.comment?"<span class='di-info'>i</span>":"";
         var itemClass = isTermine ? "dt" : (type==="collecte" ? "dc" : "dl");
         html+="<div class='day-item "+itemClass+okClass+alerteClass+"' data-cardid='"+esc(c.id)+"'>"
+          +"<span class='di-check"+(tourSelHas(c.id,type)?" on":"")+"' data-tourid='"+esc(c.id)+"' data-tourtype='"+type+"' title='Inclure dans la tourn&eacute;e'></span>"
           +"<span class='di-time'>"+icon+" "+(itemBlink?"<span class='rdv-blink'>"+(it.time||"--:--")+"</span>":(it.time||"--:--"))+"</span>"
           +"<span class='di-name'>"+esc(c.name)+(isOk?"<span class='di-okdot'></span>":"")+"</span>"
           +"<div class='di-right'>"
@@ -1466,6 +1495,7 @@ document.getElementById("pnav-today").addEventListener("click",function(){dayOff
 
 // Clic sur un item du planning (ou de la tournée) → scroll vers la carte correspondante
 function planItemClick(e){
+  if(e.target.closest(".di-check")) return;
   var item=e.target.closest("[data-cardid]");if(!item)return;
   if(e.target.closest("a"))return; // laisser Waze fonctionner
   var id=item.dataset.cardid;
@@ -1491,6 +1521,15 @@ function planItemClick(e){
   },100);
 }
 document.getElementById("plan").addEventListener("click",planItemClick);
+// Cocher / décocher une escale de la tournée
+document.getElementById("plan").addEventListener("click",function(e){
+  var box=e.target.closest(".di-check");
+  if(!box) return;
+  e.stopPropagation();
+  var on=tourSelToggle(box.dataset.tourid,box.dataset.tourtype);
+  box.classList.toggle("on",on);
+  renderTour(tourIso);
+});
 document.getElementById("tour").addEventListener("click",planItemClick);
 // Replier / déplier la tournée
 document.getElementById("tour").addEventListener("click",function(e){

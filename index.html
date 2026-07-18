@@ -300,12 +300,21 @@
     .tour-stem{position:absolute;width:2px;background:#c2d9f1;transform:translateX(-50%);}
     .tour-dot{position:absolute;bottom:12px;width:17px;height:17px;border-radius:50%;background:var(--bl);color:#fff;font-size:9px;font-weight:800;line-height:17px;text-align:center;transform:translateX(-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25);}
     .tour-stop{position:absolute;width:80px;transform:translateX(-50%);cursor:pointer;}
-    .tour-box{background:#eaf2fb;border:1px solid #c2d9f1;border-radius:9px;padding:4px 5px;text-align:center;line-height:1.3;}
-    .tour-stop.done .tour-box{background:#e9f5ee;border-color:#bbe0cc;}
-    .tour-stop.done .tour-dot,.tour-dot.done{background:var(--gn);}
+    .tour-box{background:var(--mist);border:1px solid var(--line);border-radius:9px;padding:4px 5px;text-align:center;line-height:1.3;}
+    .tour-stop.sc .tour-box{background:#faf1e0;border-color:#ecd6a6;}
+    .tour-stop.sv .tour-box{background:#f3edf8;border-color:#d9cbe9;}
+    .tour-stop.sl .tour-box{background:#e8f1fb;border-color:#c2d9f1;}
+    .tour-stop.st .tour-box{background:#e7f4ed;border-color:#bbe0cc;}
+    .tour-dot.sc{background:var(--or);}
+    .tour-dot.sv{background:var(--vi);}
+    .tour-dot.sl{background:var(--bl);}
+    .tour-dot.st{background:var(--gn);}
     .tour-stop.rdv .tour-box{border-color:#e8342a;border-width:2px;}
-    .tb-time{display:block;font-size:11px;font-weight:800;color:var(--bl);}
-    .tour-stop.done .tb-time{color:var(--gn);}
+    .tb-time{display:block;font-size:11px;font-weight:800;color:var(--navy);}
+    .tour-stop.sc .tb-time{color:var(--or);}
+    .tour-stop.sv .tb-time{color:var(--vi);}
+    .tour-stop.sl .tb-time{color:var(--bl);}
+    .tour-stop.st .tb-time{color:var(--gn);}
     .tb-name{display:block;font-size:9px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .tb-port{display:block;font-size:8px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
@@ -1137,14 +1146,15 @@ function renderTour(iso){
   placed.forEach(function(o){
     var c=o.c;
     var done=c.status==="termine";
+    var scls={collecte:"sc",traitement:"sv",livraison:"sl",termine:"st"}[c.status]||"sc";
     var rdv=!!c.deliverRdv&&!done;
     var boxBottom=o.lane===0?34:84;
     var stemH=o.lane===0?14:64;
     var time=c.deliverTime||"--:--";
     var timeHtml=rdv?"<span class='rdv-blink'>"+time+"</span>":time;
     html+="<div class='tour-stem' style='left:"+o.pos+"%;bottom:20px;height:"+stemH+"px'></div>"
-      +"<div class='tour-dot"+(done?" done":"")+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
-      +"<div class='tour-stop"+(done?" done":"")+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
+      +"<div class='tour-dot "+scls+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
+      +"<div class='tour-stop "+scls+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
       +"<div class='tour-box'>"
         +"<span class='tb-time'>"+timeHtml+"</span>"
         +"<span class='tb-name'>"+esc(c.name)+"</span>"

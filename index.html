@@ -310,6 +310,8 @@
     .tour-dot.sl{background:var(--bl);}
     .tour-dot.st{background:var(--gn);}
     .tour-stop.rdv .tour-box{border-color:#e8342a;border-width:2px;}
+    .tour-stop.fin{opacity:.72;}
+    .tour-dot.fin{opacity:.72;}
     .tb-time{display:block;font-size:11px;font-weight:800;color:var(--navy);}
     .tour-stop.sc .tb-time{color:var(--or);}
     .tour-stop.sv .tb-time{color:var(--vi);}
@@ -1146,15 +1148,16 @@ function renderTour(iso){
   placed.forEach(function(o){
     var c=o.c;
     var done=c.status==="termine";
-    var scls={collecte:"sc",traitement:"sv",livraison:"sl",termine:"st"}[c.status]||"sc";
+    // Même logique que le récap : dès que la collecte est faite (statut != collecte) -> vert, sans retour en arrière
+    var scls=(c.status==="collecte")?"sc":"st";
     var rdv=!!c.deliverRdv&&!done;
     var boxBottom=o.lane===0?34:84;
     var stemH=o.lane===0?14:64;
     var time=c.deliverTime||"--:--";
     var timeHtml=rdv?"<span class='rdv-blink'>"+time+"</span>":time;
     html+="<div class='tour-stem' style='left:"+o.pos+"%;bottom:20px;height:"+stemH+"px'></div>"
-      +"<div class='tour-dot "+scls+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
-      +"<div class='tour-stop "+scls+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
+      +"<div class='tour-dot "+scls+(done?" fin":"")+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
+      +"<div class='tour-stop "+scls+(done?" fin":"")+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
       +"<div class='tour-box'>"
         +"<span class='tb-time'>"+timeHtml+"</span>"
         +"<span class='tb-name'>"+esc(c.name)+"</span>"

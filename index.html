@@ -340,10 +340,9 @@
     .tour-stop.sl .tb-name{color:var(--bl);}
     .tour-stop.st .tb-name{color:var(--gn);}
     .tb-port{display:block;font-size:8px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);position:relative;height:16px;align-items:flex-start;}
-    .tour-end-dim{opacity:.22;}
-    .tour-me-line{position:absolute;bottom:16px;width:2px;transform:translateX(-50%);background:repeating-linear-gradient(to bottom,var(--navy) 0 4px,transparent 4px 8px);opacity:.42;}
-    .tour-me{position:absolute;top:-3px;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.3px;text-transform:none;border-radius:8px;padding:2px 7px;white-space:nowrap;box-shadow:0 2px 7px rgba(10,20,40,.3);}
+    .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .tour-me-dot{position:absolute;bottom:13px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2.5px solid #fff;transform:translateX(-50%);box-shadow:0 0 0 0 rgba(34,197,94,.55),0 2px 6px rgba(10,20,40,.3);animation:mePulse 1.9s ease-out infinite;}
+    @keyframes mePulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55),0 2px 6px rgba(10,20,40,.3);}70%{box-shadow:0 0 0 9px rgba(34,197,94,0),0 2px 6px rgba(10,20,40,.3);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0),0 2px 6px rgba(10,20,40,.3);}}
     .tour-empty{font-size:11px;color:var(--muted);text-align:center;padding:10px 0;}
     .tour-unknown{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
     .tour-unknown-lbl{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
@@ -1287,7 +1286,7 @@ function renderTour(iso){
     +"<span class='tour-eta-msg' id='tour-eta-msg'>"+(tourEtaTime?"calcul&eacute; &agrave; "+tourEtaTime:"")+"</span></div>"
     +"<div class='tour-plot' style='height:"+plotH+"px'>"
     +"<div class='tour-track'></div>"
-    +(tourMe!=null?"<div class='tour-me-line' style='left:"+tourMe+"%;height:"+(plotH-16)+"px'></div>":"");
+    +(tourMe!=null?"<div class='tour-me-dot' style='left:"+tourMe+"%'></div>":"");
 
   // Repères des ports concernés
   var ticks={};
@@ -1315,11 +1314,7 @@ function renderTour(iso){
       +"</div></div>";
   });
 
-  html+="</div><div class='tour-ends'>"
-    +"<span"+(tourMe!=null&&tourMe<28?" class='tour-end-dim'":"")+">Mandelieu</span>"
-    +(tourMe!=null?"<span class='tour-me' style='left:"+tourMe+"%'>&#128205; moi</span>":"")
-    +"<span"+(tourMe!=null&&tourMe>72?" class='tour-end-dim'":"")+">Monaco</span>"
-    +"</div>";
+  html+="</div><div class='tour-ends'><span>Mandelieu</span><span>Monaco</span></div>";
 
   if(unknown.length){
     html+="<div class='tour-unknown'><span class='tour-unknown-lbl'>Port non reconnu :</span>";

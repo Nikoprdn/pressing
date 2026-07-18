@@ -290,6 +290,29 @@
     .dchip{font-size:11px;background:var(--mist);color:#4a5b72;padding:6px 11px;border-radius:9px;font-weight:600;}
     .dchip.ok{background:#e3f5ec;color:var(--gn);font-weight:700;}
     .dchip .okdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gn);margin-left:7px;vertical-align:middle;}
+    .tour-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:11px 12px 9px;margin-top:10px;}
+    .tour-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+    .tour-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--navy);}
+    .tour-count{font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap;}
+    .tour-plot{position:relative;height:138px;}
+    .tour-track{position:absolute;left:0;right:0;bottom:16px;height:8px;border-radius:6px;background:linear-gradient(90deg,#dbe6f3 0%,#9fb9d8 50%,var(--navy) 100%);}
+    .tour-tick{position:absolute;bottom:16px;width:2px;height:8px;background:rgba(255,255,255,.85);transform:translateX(-50%);}
+    .tour-stem{position:absolute;width:2px;background:#c2d9f1;transform:translateX(-50%);}
+    .tour-dot{position:absolute;bottom:12px;width:17px;height:17px;border-radius:50%;background:var(--bl);color:#fff;font-size:9px;font-weight:800;line-height:17px;text-align:center;transform:translateX(-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+    .tour-stop{position:absolute;width:80px;transform:translateX(-50%);cursor:pointer;}
+    .tour-box{background:#eaf2fb;border:1px solid #c2d9f1;border-radius:9px;padding:4px 5px;text-align:center;line-height:1.3;}
+    .tour-stop.done .tour-box{background:#e9f5ee;border-color:#bbe0cc;}
+    .tour-stop.done .tour-dot,.tour-dot.done{background:var(--gn);}
+    .tour-stop.rdv .tour-box{border-color:#e8342a;border-width:2px;}
+    .tb-time{display:block;font-size:11px;font-weight:800;color:var(--bl);}
+    .tour-stop.done .tb-time{color:var(--gn);}
+    .tb-name{display:block;font-size:9px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tb-port{display:block;font-size:8px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .tour-empty{font-size:11px;color:var(--muted);text-align:center;padding:10px 0;}
+    .tour-unknown{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+    .tour-unknown-lbl{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+    .tour-chip{font-size:9.5px;font-weight:700;background:var(--mist);color:#4a5b72;border-radius:8px;padding:3px 7px;cursor:pointer;}
     .rdv-check{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#e8342a;letter-spacing:.5px;margin-top:8px;cursor:pointer;user-select:none;}
     .rdv-check input{width:16px;height:16px;accent-color:#e8342a;cursor:pointer;}
     @keyframes rdvBlink{0%,55%{opacity:1;}56%,100%{opacity:.18;}}
@@ -502,6 +525,7 @@
     </div>
   </div>
   <div id="plan"></div>
+  <div id="tour"></div>
 </div>
 <div class="filters" id="filters">
   <button class="ftab" data-f="all">Tous <span class="cnt" id="ba">0</span></button>
@@ -1016,6 +1040,131 @@ function getRangeStart(offset){
   return d;
 }
 
+// ---- Tournée : axe littoral Mandelieu -> Monaco ----
+// km = distance approximative le long de la côte depuis Mandelieu
+var TOUR_PORTS=[
+  {n:"Théoule",km:0,k:["theoule","theoule sur mer","la galere","figueirette"]},
+  {n:"Mandelieu",km:1.5,k:["mandelieu","la napoule","napoule"]},
+  {n:"Cannes",km:6,k:["cannes","vieux port cannes","port canto","pierre canto","palm beach","le cannet"]},
+  {n:"Golfe-Juan",km:10,k:["golfe juan","vallauris","camille rayon"]},
+  {n:"Juan-les-Pins",km:12,k:["juan les pins","port gallice","gallice"]},
+  {n:"Antibes",km:14,k:["antibes","port vauban","vauban","olivette","les salis"]},
+  {n:"Villeneuve-Loubet",km:18,k:["villeneuve loubet","marina baie des anges","baie des anges"]},
+  {n:"Cagnes-sur-Mer",km:21,k:["cagnes","cagnes sur mer","cros de cagnes"]},
+  {n:"St-Laurent-du-Var",km:24,k:["saint laurent du var","st laurent du var","saint laurent","st laurent"]},
+  {n:"Nice",km:28,k:["nice","port lympia","lympia","carras"]},
+  {n:"Villefranche",km:32,k:["villefranche","villefranche sur mer","la darse"]},
+  {n:"St-Jean-Cap-Ferrat",km:34,k:["saint jean cap ferrat","st jean cap ferrat","cap ferrat"]},
+  {n:"Beaulieu",km:35.5,k:["beaulieu","beaulieu sur mer"]},
+  {n:"Èze",km:37,k:["eze","eze sur mer","silva maris"]},
+  {n:"Cap-d'Ail",km:38.5,k:["cap d ail","cap dail"]},
+  {n:"Monaco",km:40,k:["monaco","port hercule","hercule","fontvieille","monte carlo"]}
+];
+var TOUR_MAX_KM=40;
+
+function tourNorm(s){
+  return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+}
+// Cherche le port le plus spécifique (mot-clé le plus long) contenu dans l'adresse
+function tourPort(addr){
+  var a=" "+tourNorm(addr)+" ";
+  if(a.trim()==="") return null;
+  var best=null,bestLen=0;
+  TOUR_PORTS.forEach(function(p){
+    p.k.forEach(function(key){
+      var kk=" "+tourNorm(key)+" ";
+      if(a.indexOf(kk)>=0 && kk.length>bestLen){best=p;bestLen=kk.length;}
+    });
+  });
+  return best;
+}
+
+function renderTour(iso){
+  var el=document.getElementById("tour");
+  if(!el) return;
+  // Livraisons du jour affiché, triées par heure (= ordre de la tournée)
+  var stops=[];
+  clients.forEach(function(c){
+    if(c.deliverDate===iso) stops.push(c);
+  });
+  stops.sort(function(a,b){
+    if(!a.deliverTime) return 1;
+    if(!b.deliverTime) return -1;
+    return a.deliverTime.localeCompare(b.deliverTime);
+  });
+
+  if(stops.length===0){
+    el.innerHTML="<div class='tour-card'><div class='tour-head'><span class='tour-title'>&#9973; Tourn&eacute;e du jour</span></div>"
+      +"<div class='tour-empty'>Aucune livraison ce jour</div></div>";
+    return;
+  }
+
+  var placed=[],unknown=[];
+  stops.forEach(function(c,i){
+    var addr=c.deliverAddress||c.address||"";
+    var p=tourPort(addr);
+    var o={c:c,order:i+1,port:p};
+    if(p) placed.push(o); else unknown.push(o);
+  });
+
+  // Position horizontale : 10% -> 90% de la largeur
+  placed.forEach(function(o){
+    o.pos=10+(o.port.km/TOUR_MAX_KM)*80;
+  });
+  placed.sort(function(a,b){return a.pos-b.pos;});
+
+  // Deux niveaux d'étiquettes pour éviter les chevauchements
+  var lastLane=[-99,-99];
+  placed.forEach(function(o){
+    if(o.pos-lastLane[0]>=22){o.lane=0;lastLane[0]=o.pos;}
+    else if(o.pos-lastLane[1]>=22){o.lane=1;lastLane[1]=o.pos;}
+    else {o.lane=0;lastLane[0]=o.pos;}
+  });
+
+  var html="<div class='tour-card'>"
+    +"<div class='tour-head'><span class='tour-title'>&#9973; Tourn&eacute;e du jour</span>"
+    +"<span class='tour-count'>"+stops.length+" livraison"+(stops.length>1?"s":"")+"</span></div>"
+    +"<div class='tour-plot'>"
+    +"<div class='tour-track'></div>";
+
+  // Repères des ports concernés
+  var ticks={};
+  placed.forEach(function(o){ticks[o.pos]=1;});
+  Object.keys(ticks).forEach(function(pos){
+    html+="<div class='tour-tick' style='left:"+pos+"%'></div>";
+  });
+
+  placed.forEach(function(o){
+    var c=o.c;
+    var done=c.status==="termine";
+    var rdv=!!c.deliverRdv&&!done;
+    var boxBottom=o.lane===0?34:84;
+    var stemH=o.lane===0?14:64;
+    var time=c.deliverTime||"--:--";
+    var timeHtml=rdv?"<span class='rdv-blink'>"+time+"</span>":time;
+    html+="<div class='tour-stem' style='left:"+o.pos+"%;bottom:20px;height:"+stemH+"px'></div>"
+      +"<div class='tour-dot"+(done?" done":"")+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
+      +"<div class='tour-stop"+(done?" done":"")+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
+      +"<div class='tour-box'>"
+        +"<span class='tb-time'>"+timeHtml+"</span>"
+        +"<span class='tb-name'>"+esc(c.name)+"</span>"
+        +"<span class='tb-port'>"+esc(o.port.n)+"</span>"
+      +"</div></div>";
+  });
+
+  html+="</div><div class='tour-ends'><span>Mandelieu</span><span>Monaco</span></div>";
+
+  if(unknown.length){
+    html+="<div class='tour-unknown'><span class='tour-unknown-lbl'>Port non reconnu :</span>";
+    unknown.forEach(function(o){
+      html+="<span class='tour-chip' data-cardid='"+esc(o.c.id)+"'>"+esc(o.c.name)+" "+(o.c.deliverTime||"")+"</span>";
+    });
+    html+="</div>";
+  }
+  html+="</div>";
+  el.innerHTML=html;
+}
+
 function renderPlanning(){
   var todayStr=todayISO();
   var rangeStart=getRangeStart(dayOffset);
@@ -1096,6 +1245,7 @@ function renderPlanning(){
 
   html+="</div>";
   el.innerHTML=html;
+  renderTour(isoDate(days[0]));
 }
 
 // Date + heure pour la puce ; si rendez-vous non encore honoré, l'heure clignote en rouge
@@ -1275,8 +1425,8 @@ document.getElementById("pnav-prev").addEventListener("click",function(){if(dayO
 document.getElementById("pnav-next").addEventListener("click",function(){dayOffset++;renderPlanning();});
 document.getElementById("pnav-today").addEventListener("click",function(){dayOffset=0;renderPlanning();});
 
-// Clic sur un item du planning → scroll vers la carte correspondante
-document.getElementById("plan").addEventListener("click",function(e){
+// Clic sur un item du planning (ou de la tournée) → scroll vers la carte correspondante
+function planItemClick(e){
   var item=e.target.closest("[data-cardid]");if(!item)return;
   if(e.target.closest("a"))return; // laisser Waze fonctionner
   var id=item.dataset.cardid;
@@ -1300,7 +1450,9 @@ document.getElementById("plan").addEventListener("click",function(e){
       setTimeout(function(){cardEl.style.boxShadow="";},1000);
     }
   },100);
-});
+}
+document.getElementById("plan").addEventListener("click",planItemClick);
+document.getElementById("tour").addEventListener("click",planItemClick);
 
 document.getElementById("filters").addEventListener("click",function(e){
   var tab=e.target.closest(".ftab");if(!tab)return;

@@ -306,6 +306,7 @@
     .tour-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--navy);}
     .tour-count{font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap;}
     .tour-plot{position:relative;height:138px;}
+    .tb-pin{margin-right:3px;font-size:8px;}
     .tour-track{position:absolute;left:0;right:0;bottom:16px;height:8px;border-radius:6px;background:linear-gradient(90deg,#dbe6f3 0%,#9fb9d8 50%,var(--navy) 100%);}
     .tour-tick{position:absolute;bottom:16px;width:2px;height:8px;background:rgba(255,255,255,.85);transform:translateX(-50%);}
     .tour-stem{position:absolute;width:2px;background:#c2d9f1;transform:translateX(-50%);}
@@ -323,12 +324,9 @@
     .tour-stop.rdv .tour-box{border-color:#e8342a;border-width:2px;}
     .tour-stop.fin{opacity:.72;}
     .tour-dot.fin{opacity:.72;}
-    .tb-time{display:block;font-size:11px;font-weight:800;color:var(--navy);}
-    .tour-stop.sc .tb-time{color:var(--or);}
-    .tour-stop.sv .tb-time{color:var(--vi);}
-    .tour-stop.sl .tb-time{color:var(--bl);}
-    .tour-stop.st .tb-time{color:var(--gn);}
-    .tb-name{display:block;font-size:9px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tb-name{display:block;font-size:9.5px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tour-stop.sc .tb-name{color:var(--or);}
+    .tour-stop.st .tb-name{color:var(--gn);}
     .tb-port{display:block;font-size:8px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .tour-ends{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
     .tour-empty{font-size:11px;color:var(--muted);text-align:center;padding:10px 0;}
@@ -493,7 +491,10 @@
     /* MENU ANCRE WAZE */
     .waze-menu-overlay{position:fixed;inset:0;z-index:180;display:none;}
     .waze-menu-overlay.open{display:block;}
-    .waze-menu{position:fixed;bottom:calc(26px + env(safe-area-inset-bottom) + 60px + 14px + 60px + 10px);right:18px;background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(10,20,40,.22);width:min(312px,calc(100vw - 32px));max-height:70dvh;overflow-y:auto;z-index:190;animation:su .2s ease;border:1px solid var(--line);}
+    .waze-menu{position:fixed;top:0;left:0;background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(10,20,40,.22);width:min(312px,calc(100vw - 24px));overflow:visible;z-index:190;transform-origin:top left;animation:wazePop .18s ease-out;border:1px solid var(--line);}
+@keyframes wazePop{from{opacity:0;transform:scale(.9) translateY(-8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.waze-caret{position:absolute;top:-9px;left:20px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:9px solid #35cdff;}
+#waze-menu-body{max-height:60dvh;overflow-y:auto;border-radius:0 0 17px 17px;}
     .waze-menu-head{background:linear-gradient(140deg,#33ccff,#0c9bd4);padding:15px 17px;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;}
     .waze-menu-head h3{color:#fff;font-size:14px;font-weight:800;margin:0;}
     .waze-menu-close{width:30px;height:30px;border-radius:10px;border:none;background:rgba(255,255,255,.22);color:#fff;font-size:13px;cursor:pointer;}
@@ -529,8 +530,8 @@
   <button class="status-btn shift-off" id="status-btn" title="État du poste — voir les heures"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3"/></svg></button>
   </div>
   <div class="hdr-actions">
-    <button class="hdr-btn hdr-anchor" id="anchor-btn" title="Navigation Waze vers les ports"><span class="hb-ic">&#9973;</span><span class="hb-lb">Ports</span></button>
     <button class="hdr-btn hdr-add" id="fab" title="Nouvelle commande"><span class="hb-ic">+</span><span class="hb-lb">Nouvelle commande</span></button>
+    <button class="hdr-btn hdr-anchor" id="anchor-btn" title="Navigation Waze vers les ports"><span class="hb-ic">&#9973;</span><span class="hb-lb">Ports</span></button>
   </div>
 </div>
 <div class="work-alert" id="work-alert">⚠ Aucune période de travail en cours</div>
@@ -605,6 +606,7 @@
 <!-- MENU WAZE PORTS -->
 <div class="waze-menu-overlay" id="waze-menu-overlay"></div>
 <div class="waze-menu" id="waze-menu" style="display:none">
+  <div class="waze-caret" id="waze-caret"></div>
   <div class="waze-menu-head">
     <h3>⚓ Navigation Waze</h3>
     <button class="waze-menu-close" id="waze-menu-close">✕</button>
@@ -1147,17 +1149,22 @@ function renderTour(iso){
   });
   placed.sort(function(a,b){return a.pos-b.pos;});
 
-  // Deux niveaux d'étiquettes pour éviter les chevauchements
-  var lastLane=[-99,-99];
+  // Empilement sur autant de niveaux que nécessaire : aucune escale n'est masquée
+  var lanes=[];
   placed.forEach(function(o){
-    if(o.pos-lastLane[0]>=22){o.lane=0;lastLane[0]=o.pos;}
-    else if(o.pos-lastLane[1]>=22){o.lane=1;lastLane[1]=o.pos;}
-    else {o.lane=0;lastLane[0]=o.pos;}
+    var i=0;
+    while(i<lanes.length && o.pos-lanes[i]<22) i++;
+    if(i===lanes.length) lanes.push(-99);
+    lanes[i]=o.pos;
+    o.lane=i;
   });
+  var laneCount=Math.max(1,lanes.length);
+  var LANE_STEP=38, BASE=30;
+  var plotH=BASE+laneCount*LANE_STEP+8;
 
   var html="<div class='tour-card'>"+tourHead(stops.length)
     +"<div class='tour-body'"+(tourOpen?"":" style='display:none'")+">"
-    +"<div class='tour-plot'>"
+    +"<div class='tour-plot' style='height:"+plotH+"px'>"
     +"<div class='tour-track'></div>";
 
   // Repères des ports concernés
@@ -1173,16 +1180,13 @@ function renderTour(iso){
     // Même logique que le récap : dès que la collecte est faite (statut != collecte) -> vert, sans retour en arrière
     var scls=(c.status==="collecte")?"sc":"st";
     var rdv=!!c.deliverRdv&&!done;
-    var boxBottom=o.lane===0?34:84;
-    var stemH=o.lane===0?14:64;
-    var time=c.deliverTime||"--:--";
-    var timeHtml=rdv?"<span class='rdv-blink'>"+time+"</span>":time;
+    var boxBottom=BASE+o.lane*LANE_STEP;
+    var stemH=boxBottom-20;
     html+="<div class='tour-stem' style='left:"+o.pos+"%;bottom:20px;height:"+stemH+"px'></div>"
       +"<div class='tour-dot "+scls+(done?" fin":"")+"' style='left:"+o.pos+"%'>"+o.order+"</div>"
       +"<div class='tour-stop "+scls+(done?" fin":"")+(rdv?" rdv":"")+"' style='left:"+o.pos+"%;bottom:"+boxBottom+"px' data-cardid='"+esc(c.id)+"'>"
       +"<div class='tour-box'>"
-        +"<span class='tb-time'>"+timeHtml+"</span>"
-        +"<span class='tb-name'>"+esc(c.name)+"</span>"
+        +"<span class='tb-name'>"+(rdv?"<span class='tb-pin'>&#128204;</span>":"")+esc(c.name)+"</span>"
         +"<span class='tb-port'>"+esc(o.port.n)+"</span>"
       +"</div></div>";
   });
@@ -2006,9 +2010,34 @@ document.getElementById("fname").addEventListener("input",function(){
   });
 
   // ── Menu ouverture / fermeture ────────────────────────────────
+  // Place le menu juste sous le bouton ⚓, flèche centrée sur le bouton
+  function positionMenu(){
+    var caret=document.getElementById("waze-caret");
+    var r=anchorBtn.getBoundingClientRect();
+    var vw=window.innerWidth, vh=window.innerHeight, m=12;
+    menuEl.style.visibility="hidden";
+    menuEl.style.display="block";
+    var w=menuEl.offsetWidth;
+    var left=r.left+r.width/2-w/2;
+    if(left<m) left=m;
+    if(left+w>vw-m) left=vw-w-m;
+    var top=r.bottom+10;
+    menuEl.style.left=left+"px";
+    menuEl.style.top=top+"px";
+    var cx=r.left+r.width/2-left;              // centre du bouton, relatif au menu
+    if(cx<18) cx=18;
+    if(cx>w-18) cx=w-18;
+    if(caret) caret.style.left=(cx-9)+"px";
+    menuEl.style.transformOrigin=cx+"px top";  // le menu s'ouvre depuis le bouton
+    var bodyMax=vh-top-16-56;                  // 56 = hauteur de l'en-tête du menu
+    if(bodyMax<180) bodyMax=180;
+    bodyEl.style.maxHeight=bodyMax+"px";
+    menuEl.style.visibility="";
+  }
+
   function openMenu(){
     buildMenu();
-    menuEl.style.display = "block";
+    positionMenu();
     overlay.classList.add("open");
   }
   function closeMenu(){
@@ -2021,6 +2050,7 @@ document.getElementById("fname").addEventListener("input",function(){
     if(menuEl.style.display === "none") openMenu(); else closeMenu();
   });
   overlay.addEventListener("click", closeMenu);
+  window.addEventListener("resize",function(){ if(menuEl.style.display!=="none") positionMenu(); });
   document.getElementById("waze-menu-close").addEventListener("click", closeMenu);
   bodyEl.addEventListener("click", function(e){
     if(e.target.closest(".waze-port-link") && !e.defaultPrevented) setTimeout(closeMenu, 300);

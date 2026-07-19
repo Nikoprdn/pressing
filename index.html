@@ -227,6 +227,7 @@
     .bk-box h3{margin:0 0 12px;font-size:14px;font-weight:800;color:var(--navy);}
     .bk-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11.5px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line);}
     .bk-row b{color:var(--navy);font-size:12px;font-weight:800;text-align:right;}
+    .bk-link{display:block;margin-top:9px;font-size:11.5px;font-weight:800;color:var(--bl);text-decoration:none;}
     .bk-msg{margin-top:11px;font-size:11px;font-weight:700;line-height:1.45;min-height:16px;}
     .bk-msg.ok{color:var(--gn);}
     .bk-msg.err{color:#c0362e;}
@@ -581,6 +582,9 @@
     <div class="bk-row"><span>Taille des donn&eacute;es</span><b id="bk-size">–</b></div>
     <div class="bk-row"><span>Derni&egrave;re &eacute;criture</span><b id="bk-last">…</b></div>
     <div class="bk-row"><span>Version du script</span><b id="bk-ver">…</b></div>
+    <div class="bk-row"><span>Lignes &eacute;crites</span><b id="bk-rows">…</b></div>
+    <div class="bk-row"><span>Classeur &eacute;crit</span><b id="bk-book">…</b></div>
+    <a class="bk-link" id="bk-link" href="#" target="_blank" rel="noopener" style="display:none">Ouvrir CE classeur &#8599;</a>
     <div class="bk-msg" id="bk-msg"></div>
     <div class="bk-actions">
       <button class="bk-cancel" id="bk-close">Fermer</button>
@@ -1049,13 +1053,13 @@ function backupToSheet(){
 function fetchBackupStatus(){
   return fetch(BACKUP_URL+"?status=1&_t="+Date.now())
     .then(function(r){return r.json();})
-    .then(function(d){ return {t:(d&&d.lastSaveAt)||null, v:(d&&d.version)||null}; });
+    .then(function(d){ return d||{}; });
 }
 
 function checkBackupStatus(){
   if(!BACKUP_URL) return;
   fetchBackupStatus()
-    .then(function(s){ if(s.t) lastKnownBackupTime=s.t; })
+    .then(function(s){ if(s.lastSaveAt) lastKnownBackupTime=s.lastSaveAt; })
     ["catch"](function(){ /* vérif silencieuse */ });
 }
 
@@ -1071,6 +1075,15 @@ function bkSay(t,cls){
   var m=document.getElementById("bk-msg");
   if(m){ m.textContent=t; m.className="bk-msg"+(cls?" "+cls:""); }
 }
+function bkShow(s){
+  document.getElementById("bk-last").textContent=bkFmt(s.lastSaveAt);
+  document.getElementById("bk-ver").textContent=s.version||"ancienne";
+  document.getElementById("bk-rows").textContent=(s.rows!=null?s.rows+" commandes":"—");
+  document.getElementById("bk-book").textContent=s.book||(s.liveBook&&s.liveBook.name)||"—";
+  var a=document.getElementById("bk-link");
+  var u=s.bookUrl||(s.liveBook&&s.liveBook.url)||"";
+  if(u){ a.href=u; a.style.display="block"; } else { a.style.display="none"; }
+}
 function openBackupPanel(){
   var body=backupPayload();
   document.getElementById("bk-n").textContent=clients.length;
@@ -1081,11 +1094,11 @@ function openBackupPanel(){
   document.getElementById("bk-overlay").classList.add("open");
   fetchBackupStatus()
     .then(function(s){
-      lastKnownBackupTime=s.t;
-      lastScriptVersion=s.v;
-      document.getElementById("bk-last").textContent=bkFmt(s.t);
-      document.getElementById("bk-ver").textContent=s.v||"ancienne";
-      if(!s.v) bkSay("⚠ Le script déployé est l'ANCIENNE version : elle ne sait pas recevoir les données. Apps Script → Déployer → Gérer les déploiements → crayon → Version : Nouvelle version → Déployer.","err");
+      lastKnownBackupTime=s.lastSaveAt;
+      lastScriptVersion=s.version;
+      bkShow(s);
+      if(!s.version) bkSay("⚠ Le script déployé est l'ANCIENNE version : elle ne sait pas recevoir les données. Apps Script → Déployer → Gérer les déploiements → crayon → Version : Nouvelle version → Déployer.","err");
+      else if(s.bookError) bkSay("❌ "+s.bookError,"err");
     })
     ["catch"](function(){
       document.getElementById("bk-last").textContent="injoignable";
@@ -1102,15 +1115,14 @@ function bkTest(){
   setTimeout(function(){
     fetchBackupStatus()
       .then(function(s){
-        document.getElementById("bk-last").textContent=bkFmt(s.t);
-        document.getElementById("bk-ver").textContent=s.v||"ancienne";
-        if(s.t&&s.t!==before){
-          lastKnownBackupTime=s.t;
-          bkSay("✅ Sauvegarde réussie : le Sheet vient d'être écrit.","ok");
-        } else if(!s.v){
+        bkShow(s);
+        if(s.lastSaveAt&&s.lastSaveAt!==before){
+          lastKnownBackupTime=s.lastSaveAt;
+          bkSay("✅ Écrit dans le classeur « "+(s.book||"?")+" », onglet « "+(s.tab||"?")+" » ("+(s.rows||"?")+" commandes). Si tu ne vois rien, c'est que ce n'est PAS le classeur que tu regardes : ouvre-le avec le lien ci-dessus.","ok");
+        } else if(!s.version){
           bkSay("❌ C'est bien l'ANCIENNE version du script qui est déployée. Il ne suffit pas d'enregistrer : Déployer → Gérer les déploiements → crayon → Version : « Nouvelle version » → Déployer.","err");
         } else {
-          bkSay("❌ Version "+s.v+" déployée, mais l'envoi n'est pas traité. Dis-le-moi : je passerai l'envoi par ton Worker Cloudflare.","err");
+          bkSay("❌ Version "+s.version+" déployée, mais l'envoi n'est pas traité. Dis-le-moi : je passerai l'envoi par ton Worker Cloudflare.","err");
         }
       })
       ["catch"](function(){

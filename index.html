@@ -580,6 +580,7 @@
     <div class="bk-row"><span>Commandes</span><b id="bk-n">–</b></div>
     <div class="bk-row"><span>Taille des donn&eacute;es</span><b id="bk-size">–</b></div>
     <div class="bk-row"><span>Derni&egrave;re &eacute;criture</span><b id="bk-last">…</b></div>
+    <div class="bk-row"><span>Version du script</span><b id="bk-ver">…</b></div>
     <div class="bk-msg" id="bk-msg"></div>
     <div class="bk-actions">
       <button class="bk-cancel" id="bk-close">Fermer</button>
@@ -1001,6 +1002,7 @@ function pushClients(){
 
 // Sauvegarde silencieuse vers Google Sheets (de secours, en plus de Cloudflare)
 var lastKnownBackupTime=null;
+var lastScriptVersion=null;
 var lastBackupSize=0;
 
 // Construit les données à archiver (toutes les commandes, sans troncature)
@@ -1047,13 +1049,13 @@ function backupToSheet(){
 function fetchBackupStatus(){
   return fetch(BACKUP_URL+"?status=1&_t="+Date.now())
     .then(function(r){return r.json();})
-    .then(function(d){ return (d&&d.lastSaveAt)||null; });
+    .then(function(d){ return {t:(d&&d.lastSaveAt)||null, v:(d&&d.version)||null}; });
 }
 
 function checkBackupStatus(){
   if(!BACKUP_URL) return;
   fetchBackupStatus()
-    .then(function(t){ if(t) lastKnownBackupTime=t; })
+    .then(function(s){ if(s.t) lastKnownBackupTime=s.t; })
     ["catch"](function(){ /* vérif silencieuse */ });
 }
 
@@ -1074,16 +1076,20 @@ function openBackupPanel(){
   document.getElementById("bk-n").textContent=clients.length;
   document.getElementById("bk-size").textContent=(body.length/1024).toFixed(1)+" Ko";
   document.getElementById("bk-last").textContent="…";
+  document.getElementById("bk-ver").textContent="…";
   bkSay("");
   document.getElementById("bk-overlay").classList.add("open");
   fetchBackupStatus()
-    .then(function(t){
-      lastKnownBackupTime=t;
-      document.getElementById("bk-last").textContent=bkFmt(t);
-      if(!t) bkSay("Le script n'a jamais rien écrit.","err");
+    .then(function(s){
+      lastKnownBackupTime=s.t;
+      lastScriptVersion=s.v;
+      document.getElementById("bk-last").textContent=bkFmt(s.t);
+      document.getElementById("bk-ver").textContent=s.v||"ancienne";
+      if(!s.v) bkSay("⚠ Le script déployé est l'ANCIENNE version : elle ne sait pas recevoir les données. Apps Script → Déployer → Gérer les déploiements → crayon → Version : Nouvelle version → Déployer.","err");
     })
     ["catch"](function(){
       document.getElementById("bk-last").textContent="injoignable";
+      document.getElementById("bk-ver").textContent="—";
       bkSay("Script Google injoignable : vérifie que le déploiement est accessible « à tout le monde ».","err");
     });
 }
@@ -1095,15 +1101,16 @@ function bkTest(){
   backupToSheet();
   setTimeout(function(){
     fetchBackupStatus()
-      .then(function(t){
-        document.getElementById("bk-last").textContent=bkFmt(t);
-        if(t&&t!==before){
-          lastKnownBackupTime=t;
+      .then(function(s){
+        document.getElementById("bk-last").textContent=bkFmt(s.t);
+        document.getElementById("bk-ver").textContent=s.v||"ancienne";
+        if(s.t&&s.t!==before){
+          lastKnownBackupTime=s.t;
           bkSay("✅ Sauvegarde réussie : le Sheet vient d'être écrit.","ok");
-        } else if(!t){
-          bkSay("❌ Rien n'a été écrit. Le script n'a pas de fonction doPost : il faut le mettre à jour puis redéployer.","err");
+        } else if(!s.v){
+          bkSay("❌ C'est bien l'ANCIENNE version du script qui est déployée. Il ne suffit pas d'enregistrer : Déployer → Gérer les déploiements → crayon → Version : « Nouvelle version » → Déployer.","err");
         } else {
-          bkSay("❌ La date n'a pas bougé. L'envoi n'a pas été traité — doPost manquant ou déploiement non mis à jour.","err");
+          bkSay("❌ Version "+s.v+" déployée, mais l'envoi n'est pas traité. Dis-le-moi : je passerai l'envoi par ton Worker Cloudflare.","err");
         }
       })
       ["catch"](function(){

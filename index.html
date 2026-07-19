@@ -220,7 +220,22 @@
     .status-btn.shift-off{background:linear-gradient(145deg,#ff8785,#e8544e);color:#fff;box-shadow:0 6px 16px rgba(232,84,78,.40);}
     .status-btn.shift-run{background:linear-gradient(145deg,#46d9a3,#20b077);color:#fff;animation:statusGlow 1.9s ease-in-out infinite;}
     .status-btn.shift-pause{background:linear-gradient(145deg,#ffcf4d,#f2ab1f);color:#5a3d00;box-shadow:0 6px 16px rgba(242,171,31,.40);}
-    .syncbar{background:rgba(11,26,46,.97);padding:6px 18px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:rgba(255,255,255,.62);font-weight:500;letter-spacing:.2px;}
+    .syncbar{cursor:pointer;background:rgba(11,26,46,.97);padding:6px 18px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:rgba(255,255,255,.62);font-weight:500;letter-spacing:.2px;}
+    .bk-overlay{position:fixed;inset:0;background:rgba(10,22,40,.55);z-index:770;display:none;align-items:center;justify-content:center;padding:22px;}
+    .bk-overlay.open{display:flex;}
+    .bk-box{background:#fff;border-radius:18px;padding:18px;width:100%;max-width:340px;box-shadow:0 18px 50px rgba(8,20,38,.3);}
+    .bk-box h3{margin:0 0 12px;font-size:14px;font-weight:800;color:var(--navy);}
+    .bk-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11.5px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line);}
+    .bk-row b{color:var(--navy);font-size:12px;font-weight:800;text-align:right;}
+    .bk-msg{margin-top:11px;font-size:11px;font-weight:700;line-height:1.45;min-height:16px;}
+    .bk-msg.ok{color:var(--gn);}
+    .bk-msg.err{color:#c0362e;}
+    .bk-msg.wait{color:var(--muted);}
+    .bk-actions{display:flex;gap:8px;margin-top:13px;}
+    .bk-actions button{flex:1;border:none;border-radius:11px;padding:11px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;}
+    .bk-cancel{background:var(--mist);color:#4a5b72;}
+    .bk-go{background:linear-gradient(140deg,#3f74ab,#1d4068);color:#fff;}
+    .bk-go:disabled{opacity:.55;}
     .sync-left{display:flex;align-items:center;gap:8px;}
     .dot{width:7px;height:7px;border-radius:50%;background:#6b7790;flex-shrink:0;transition:background .3s;box-shadow:0 0 0 3px rgba(255,255,255,.06);}
     .dot.ok{background:#3ddc97;box-shadow:0 0 0 3px rgba(61,220,151,.18);}.dot.err{background:#ff6b6b;box-shadow:0 0 0 3px rgba(255,107,107,.18);}.dot.spin{background:#ffd23f;animation:pulse 1s infinite;}
@@ -555,9 +570,22 @@
   </div>
 </div>
 <div class="work-alert" id="work-alert">⚠ Aucune période de travail en cours</div>
-<div class="syncbar">
+<div class="syncbar" id="syncbar">
   <div class="sync-left"><div class="dot" id="dot"></div><span id="slbl">Connexion…</span></div>
   <span id="tc"></span>
+</div>
+<div class="bk-overlay" id="bk-overlay">
+  <div class="bk-box">
+    <h3>&#9729; Sauvegarde Google Sheets</h3>
+    <div class="bk-row"><span>Commandes</span><b id="bk-n">–</b></div>
+    <div class="bk-row"><span>Taille des donn&eacute;es</span><b id="bk-size">–</b></div>
+    <div class="bk-row"><span>Derni&egrave;re &eacute;criture</span><b id="bk-last">…</b></div>
+    <div class="bk-msg" id="bk-msg"></div>
+    <div class="bk-actions">
+      <button class="bk-cancel" id="bk-close">Fermer</button>
+      <button class="bk-go" id="bk-test">Tester maintenant</button>
+    </div>
+  </div>
 </div>
 <div class="plan-section">
   <div class="plan-header">
@@ -973,56 +1001,125 @@ function pushClients(){
 
 // Sauvegarde silencieuse vers Google Sheets (de secours, en plus de Cloudflare)
 var lastKnownBackupTime=null;
+var lastBackupSize=0;
 
+// Construit les données à archiver (toutes les commandes, sans troncature)
+function backupPayload(){
+  var slim=clients.map(function(c){return{
+    num:c.num||"",
+    name:c.name||"",
+    phone:c.phone||"",
+    status:c.status||"",
+    collectAddress:c.collectAddress||c.address||"",
+    deliverAddress:c.deliverAddress||c.address||"",
+    collectDate:c.collectDate||"",
+    collectTime:c.collectTime||"",
+    collectRdv:c.collectRdv?1:0,
+    deliverDate:c.deliverDate||"",
+    deliverTime:c.deliverTime||"",
+    deliverRdv:c.deliverRdv?1:0,
+    bags:c.bags||0,
+    comment:c.comment||"",
+    alerte:c.alerte?1:0,
+    id:c.id||""
+  };});
+  return JSON.stringify({clients:slim});
+}
+
+// Envoi en POST : pas de limite de longueur (contrairement à l'ancienne URL d'image),
+// "no-cors" + text/plain = requête simple, donc aucun blocage CORS côté Apps Script.
 function backupToSheet(){
   if(!BACKUP_URL) return;
   try{
-    var slim=clients.map(function(c){return{
-      num:c.num||"",
-      name:c.name||"",
-      phone:c.phone||"",
-      status:c.status||"",
-      collectAddress:c.collectAddress||c.address||"",
-      deliverAddress:c.deliverAddress||c.address||"",
-      collectDate:c.collectDate||"",
-      collectTime:c.collectTime||"",
-      collectRdv:c.collectRdv?1:0,
-      deliverDate:c.deliverDate||"",
-      deliverTime:c.deliverTime||"",
-      deliverRdv:c.deliverRdv?1:0,
-      bags:c.bags||0,
-      comment:c.comment||"",
-      alerte:c.alerte?1:0,
-      id:c.id||""
-    };});
-    // Envoi en une seule requête GET avec payload compacté
-    var payload=JSON.stringify({clients:slim});
-    var encoded=encodeURIComponent(payload);
-    // Si trop long, tronquer les commentaires/adresses pour tenir dans l'URL
-    if(encoded.length>6000){
-      slim=slim.map(function(c){return Object.assign({},c,{comment:"",collectAddress:"",deliverAddress:""});});
-      encoded=encodeURIComponent(JSON.stringify({clients:slim}));
-    }
-    var img=new Image();
-    img.src=BACKUP_URL+"?payload="+encoded+"&_t="+Date.now();
-    setTimeout(checkBackupStatus,4000);
+    var body=backupPayload();
+    lastBackupSize=body.length;
+    fetch(BACKUP_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:body
+    })["catch"](function(){ /* silencieux : le backup ne doit jamais bloquer l'app */ });
+    setTimeout(checkBackupStatus,4500);
   }catch(e){ /* silencieux */ }
+}
+
+// Interroge le script pour connaître la date de la dernière écriture réelle dans le Sheet
+function fetchBackupStatus(){
+  return fetch(BACKUP_URL+"?status=1&_t="+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(d){ return (d&&d.lastSaveAt)||null; });
 }
 
 function checkBackupStatus(){
   if(!BACKUP_URL) return;
-  fetch(BACKUP_URL+"?status=1")
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.lastSaveAt && data.lastSaveAt!==lastKnownBackupTime){
-        lastKnownBackupTime=data.lastSaveAt;
-        // succès silencieux, pas besoin de notifier à chaque fois
-      } else if(!data.lastSaveAt){
-        toast("\u26a0\ufe0f Sauvegarde Google Sheets jamais re\u00e7ue");
-      }
-    })
-    .catch(function(){ /* vérif silencieuse, ne bloque rien */ });
+  fetchBackupStatus()
+    .then(function(t){ if(t) lastKnownBackupTime=t; })
+    ["catch"](function(){ /* vérif silencieuse */ });
 }
+
+// ---- Panneau de diagnostic de la sauvegarde ----
+function bkFmt(iso){
+  if(!iso) return "jamais";
+  var d=new Date(iso);
+  if(isNaN(d)) return String(iso);
+  return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})+" à "
+       + d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+}
+function bkSay(t,cls){
+  var m=document.getElementById("bk-msg");
+  if(m){ m.textContent=t; m.className="bk-msg"+(cls?" "+cls:""); }
+}
+function openBackupPanel(){
+  var body=backupPayload();
+  document.getElementById("bk-n").textContent=clients.length;
+  document.getElementById("bk-size").textContent=(body.length/1024).toFixed(1)+" Ko";
+  document.getElementById("bk-last").textContent="…";
+  bkSay("");
+  document.getElementById("bk-overlay").classList.add("open");
+  fetchBackupStatus()
+    .then(function(t){
+      lastKnownBackupTime=t;
+      document.getElementById("bk-last").textContent=bkFmt(t);
+      if(!t) bkSay("Le script n'a jamais rien écrit.","err");
+    })
+    ["catch"](function(){
+      document.getElementById("bk-last").textContent="injoignable";
+      bkSay("Script Google injoignable : vérifie que le déploiement est accessible « à tout le monde ».","err");
+    });
+}
+function bkTest(){
+  var btn=document.getElementById("bk-test");
+  if(btn) btn.disabled=true;
+  bkSay("Envoi en cours…","wait");
+  var before=lastKnownBackupTime;
+  backupToSheet();
+  setTimeout(function(){
+    fetchBackupStatus()
+      .then(function(t){
+        document.getElementById("bk-last").textContent=bkFmt(t);
+        if(t&&t!==before){
+          lastKnownBackupTime=t;
+          bkSay("✅ Sauvegarde réussie : le Sheet vient d'être écrit.","ok");
+        } else if(!t){
+          bkSay("❌ Rien n'a été écrit. Le script n'a pas de fonction doPost : il faut le mettre à jour puis redéployer.","err");
+        } else {
+          bkSay("❌ La date n'a pas bougé. L'envoi n'a pas été traité — doPost manquant ou déploiement non mis à jour.","err");
+        }
+      })
+      ["catch"](function(){
+        bkSay("❌ Script injoignable. Vérifie l'URL et l'accès « tout le monde ».","err");
+      })
+      .then(function(){ if(btn) btn.disabled=false; });
+  },6000);
+}
+document.getElementById("syncbar").addEventListener("click",openBackupPanel);
+document.getElementById("bk-close").addEventListener("click",function(){
+  document.getElementById("bk-overlay").classList.remove("open");
+});
+document.getElementById("bk-test").addEventListener("click",bkTest);
+document.getElementById("bk-overlay").addEventListener("click",function(e){
+  if(e.target.id==="bk-overlay") e.currentTarget.classList.remove("open");
+});
 
 function render(){
   var counts={collecte:0,traitement:0,livraison:0,termine:0};

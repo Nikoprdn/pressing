@@ -529,6 +529,12 @@
     .waze-menu-overlay.open{display:block;}
     .waze-menu{position:fixed;top:0;left:0;background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(10,20,40,.22);width:min(312px,calc(100vw - 24px));overflow:visible;z-index:190;transform-origin:top left;animation:wazePop .18s ease-out;border:1px solid var(--line);}
 @keyframes wazePop{from{opacity:0;transform:scale(.9) translateY(-8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.port-eta-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--line);background:#f7f9fc;position:sticky;top:0;z-index:2;}
+.port-eta-btn{border:none;border-radius:10px;padding:7px 11px;font-family:inherit;font-size:10.5px;font-weight:800;letter-spacing:.3px;color:#fff;background:linear-gradient(140deg,#33ccff,#0c9bd4);cursor:pointer;flex-shrink:0;}
+.port-eta-btn:disabled{opacity:.55;}
+.port-eta-msg{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.port-eta-badge{margin-left:auto;flex-shrink:0;background:var(--navy);color:#fff;font-size:10px;font-weight:800;border-radius:8px;padding:3px 8px;white-space:nowrap;}
+.port-eta-badge + .port-code-badge{margin-left:6px;}
 .waze-caret{position:absolute;top:-9px;left:20px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:9px solid #35cdff;}
 #waze-menu-body{max-height:60dvh;overflow-y:auto;border-radius:0 0 17px 17px;}
     .waze-menu-head{background:linear-gradient(140deg,#33ccff,#0c9bd4);padding:15px 17px;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;}
@@ -893,6 +899,28 @@ var PORTS_BY_CITY = [
     "Port de la Santé, Villefranche-sur-Mer, France"
   ]}
 ];
+
+// Coordonnées de chaque port du menu (pour le calcul des temps de trajet)
+var PORT_COORDS = {
+  "Port Vauban, Antibes, France":                        [43.5878, 7.1275],
+  "Port Gallice, Antibes, France":                       [43.5665, 7.1043],
+  "Vieux-Port de Cannes, Cannes, France":                [43.5497, 7.0175],
+  "Port Pierre Canto, Cannes, France":                   [43.5451, 7.0300],
+  "Port de Cap d'Ail, Cap d'Ail, France":                [43.7245, 7.4056],
+  "Port Camille Rayon, Golf-Juan, France":               [43.5648, 7.0800],
+  "Port La Napoule, Mandelieu-la-Napoule, France":       [43.5228, 6.9400],
+  "Port de la Rague, Mandelieu-la-Napoule, France":      [43.5075, 6.9440],
+  "Port de Garavan, Menton, France":                     [43.7817, 7.5230],
+  "Vieux Port de Menton, Menton, France":                [43.7757, 7.5100],
+  "Port Hercule, Monaco":                                [43.7355, 7.4260],
+  "Port de Fontvieille, Monaco":                         [43.7275, 7.4180],
+  "Yacht Club de Monaco, Monaco":                        [43.7343, 7.4288],
+  "Port Lympia, Nice, France":                           [43.6953, 7.2860],
+  "Port de la Darse, Villefranche-sur-Mer, France":      [43.7020, 7.3080],
+  "Port de la Santé, Villefranche-sur-Mer, France":      [43.7047, 7.3113]
+};
+var portEta={};      // "port" -> minutes
+var portEtaTime="";  // heure du dernier calcul
 
 function populatePortsDatalist(){
   var dl=document.getElementById("ports-datalist");
@@ -2164,7 +2192,10 @@ document.getElementById("fname").addEventListener("input",function(){
 
   // ── Construction du menu ───────────────────────────────────────
   function buildMenu(){
-    var html = "";
+    var html = "<div class='port-eta-bar'>"
+             + "<button class='port-eta-btn' id='port-eta-btn'>&#9201; Temps de trajet</button>"
+             + "<span class='port-eta-msg' id='port-eta-msg'>"+(portEtaTime?"calcul&eacute; &agrave; "+portEtaTime:"")+"</span>"
+             + "</div>";
     PORTS_BY_CITY.forEach(function(grp){
       html += "<div class='waze-menu-city'>" + esc(grp.city) + "</div>";
       grp.ports.forEach(function(p){
@@ -2172,9 +2203,11 @@ document.getElementById("fname").addEventListener("input",function(){
         var label = p.split(",")[0];
         var code  = getCode(p);
         var badge = code ? "<span class='port-code-badge'>🔑 " + esc(code) + "</span>" : "";
+        var eta   = (portEta[p]!=null) ? "<span class='port-eta-badge'>"+portEta[p]+" min</span>" : "";
         html += "<a class='waze-port-link' href='" + esc(href) + "' target='_blank' rel='noopener' data-port='" + esc(p) + "'>"
               + "<span class='waze-port-icon'>&#128663;</span>"
               + "<span class='port-link-label'>" + esc(label) + "</span>"
+              + eta
               + badge
               + "</a>";
       });
@@ -2182,6 +2215,51 @@ document.getElementById("fname").addEventListener("input",function(){
     bodyEl.innerHTML = html;
     attachLongPress();
   }
+
+  // ── Temps de trajet vers chaque port ──────────────────────────
+  function portsSay(t){ var m=document.getElementById("port-eta-msg"); if(m) m.innerHTML=t; }
+  function fetchPortEtas(){
+    var btn=document.getElementById("port-eta-btn");
+    if(!navigator.geolocation){ portsSay("G&eacute;olocalisation indisponible"); return; }
+    if(btn) btn.disabled=true;
+    portsSay("Localisation…");
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var orig=pos.coords.latitude.toFixed(6)+","+pos.coords.longitude.toFixed(6);
+      var list=[];
+      PORTS_BY_CITY.forEach(function(g){ g.ports.forEach(function(p){ if(PORT_COORDS[p]) list.push(p); }); });
+      var total=list.length, fini=0, ok=0, i=0;
+      portsSay("0/"+total);
+      // 4 requêtes en parallèle au maximum, pour ne pas saturer le réseau mobile
+      function next(){
+        if(i>=list.length) return Promise.resolve();
+        var p=list[i++], c=PORT_COORDS[p];
+        var url=ETA_API+"/travel?orig="+encodeURIComponent(orig)+"&dest="+encodeURIComponent(c[0]+","+c[1]);
+        return fetch(url)
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            var s=d&&d.routes&&d.routes[0]&&d.routes[0].summary;
+            if(s&&typeof s.travelTimeInSeconds==="number"){ portEta[p]=Math.max(1,Math.round(s.travelTimeInSeconds/60)); ok++; }
+          })
+          ["catch"](function(){})
+          .then(function(){ fini++; portsSay(fini+"/"+total); return next(); });
+      }
+      var runners=[];
+      for(var k=0;k<4;k++) runners.push(next());
+      Promise.all(runners).then(function(){
+        if(ok===0){ portsSay("Aucun temps calcul&eacute;"); if(btn) btn.disabled=false; return; }
+        var now=new Date();
+        portEtaTime=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
+        buildMenu();
+        positionMenu();
+      });
+    },function(err){
+      portsSay(err&&err.code===1?"Localisation refus&eacute;e":"Localisation impossible");
+      if(btn) btn.disabled=false;
+    },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+  }
+  bodyEl.addEventListener("click",function(e){
+    if(e.target.closest("#port-eta-btn")){ e.preventDefault(); fetchPortEtas(); }
+  });
 
   // ── Détection appui long sur chaque lien port ──────────────────
   function attachLongPress(){

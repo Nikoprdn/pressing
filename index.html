@@ -868,6 +868,9 @@ var PORTS_BY_CITY = [
     "Port Vauban, Antibes, France",
     "Port Gallice, Antibes, France"
   ]},
+  { city:"Beaulieu-sur-Mer", ports:[
+    "Port de Beaulieu-sur-Mer, Beaulieu-sur-Mer, France"
+  ]},
   { city:"Cannes", ports:[
     "Vieux-Port de Cannes, Cannes, France",
     "Port Pierre Canto, Cannes, France"
@@ -904,6 +907,7 @@ var PORTS_BY_CITY = [
 var PORT_COORDS = {
   "Port Vauban, Antibes, France":                        [43.5878, 7.1275],
   "Port Gallice, Antibes, France":                       [43.5665, 7.1043],
+  "Port de Beaulieu-sur-Mer, Beaulieu-sur-Mer, France":  [43.7069, 7.3359],
   "Vieux-Port de Cannes, Cannes, France":                [43.5497, 7.0175],
   "Port Pierre Canto, Cannes, France":                   [43.5451, 7.0300],
   "Port de Cap d'Ail, Cap d'Ail, France":                [43.7245, 7.4056],
@@ -2206,6 +2210,18 @@ document.getElementById("fname").addEventListener("input",function(){
   function storageKey(port){ return "llf_barrier_" + port; }
   function getCode(port){ try{ return localStorage.getItem(storageKey(port))||""; }catch(e){ return ""; } }
   function setCode(port,code){ try{ if(code) localStorage.setItem(storageKey(port),code); else localStorage.removeItem(storageKey(port)); }catch(e){} }
+
+  // ── Mise à jour ponctuelle de codes officiels ─────────────────
+  // S'applique UNE seule fois (tag de version), puis tes modifs manuelles priment.
+  var CODE_SEED = { "Port Pierre Canto, Cannes, France": "3674A" };
+  var CODE_SEED_VERSION = "2026-07_cannes_3674A";
+  (function(){
+    try{
+      if(localStorage.getItem("llf_code_seed")===CODE_SEED_VERSION) return;
+      Object.keys(CODE_SEED).forEach(function(p){ localStorage.setItem(storageKey(p),CODE_SEED[p]); });
+      localStorage.setItem("llf_code_seed",CODE_SEED_VERSION);
+    }catch(e){}
+  })();
 
   // ── Construction du menu ───────────────────────────────────────
   function buildMenu(){

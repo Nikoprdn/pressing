@@ -788,7 +788,7 @@
         <div>
           <label class="flbl">Heure collecte</label>
           <div style="display:flex;gap:6px">
-            <input class="finp" id="fcolh" type="time" style="flex:1">
+            <input class="finp" id="fcolh" type="time" step="900" style="flex:1">
             <button type="button" class="now-btn" id="now-collect-btn">NOW</button>
           </div>
           <label class="rdv-check"><input type="checkbox" id="fcolrdv"> RDV</label>
@@ -799,7 +799,7 @@
         <div>
           <label class="flbl">Heure livraison</label>
           <div style="display:flex;gap:6px">
-            <input class="finp" id="fdelh" type="time" style="flex:1">
+            <input class="finp" id="fdelh" type="time" step="900" style="flex:1">
             <button type="button" class="now-btn" id="now-deliver-btn">NOW</button>
           </div>
           <label class="rdv-check"><input type="checkbox" id="fdelrdv"> RDV</label>
@@ -984,12 +984,19 @@ document.getElementById("faddr-collect").addEventListener("input",function(){
 });
 
 // ── BOUTONS NOW (date + heure actuelles) ─────────────────────
+// Heure du moment, arrondie à la plage de 15 min la plus proche (gère le passage d'heure/jour)
+function nowRounded15(){
+  var d=new Date();
+  d.setMinutes(Math.round(d.getMinutes()/15)*15,0,0);
+  var hh=String(d.getHours()).padStart(2,"0");
+  var mm=String(d.getMinutes()).padStart(2,"0");
+  var iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  return {iso:iso,time:hh+":"+mm};
+}
 function fillNow(dateId,timeId){
-  document.getElementById(dateId).value=todayISO();
-  var now=new Date();
-  var hh=String(now.getHours()).padStart(2,"0");
-  var mm=String(now.getMinutes()).padStart(2,"0");
-  document.getElementById(timeId).value=hh+":"+mm;
+  var r=nowRounded15();
+  document.getElementById(dateId).value=r.iso;
+  document.getElementById(timeId).value=r.time;
 }
 document.getElementById("now-collect-btn").addEventListener("click",function(){fillNow("fcol","fcolh");});
 document.getElementById("now-deliver-btn").addEventListener("click",function(){fillNow("fdel","fdelh");});
@@ -1631,7 +1638,17 @@ document.getElementById("cards").addEventListener("click",function(e){
   var btn=e.target.closest("[data-a]");if(!btn)return;
   var id=btn.closest(".card").dataset.id;
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
-  if(btn.dataset.a==="status"){c.status=btn.dataset.v;render();pushClients();toast("Statut → "+btn.dataset.v);}
+  if(btn.dataset.a==="status"){
+    var v=btn.dataset.v;
+    c.status=v;
+    // Horodatage auto : "Traitement" = collecte faite, "Terminé" = livraison faite
+    if(v==="traitement"){ var rc=nowRounded15(); c.collectDate=rc.iso; c.collectTime=rc.time; }
+    if(v==="termine"){ var rl=nowRounded15(); c.deliverDate=rl.iso; c.deliverTime=rl.time; }
+    render();pushClients();
+    toast(v==="traitement"?"Collecte horodatée · "+c.collectTime
+        : v==="termine"   ?"Livraison horodatée · "+c.deliverTime
+        :                  "Statut → "+v);
+  }
   if(btn.dataset.a==="phone"){
     // Fermer un menu éventuellement ouvert
     var old=document.querySelector(".phone-menu");if(old)old.remove();

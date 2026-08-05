@@ -525,6 +525,10 @@
     .gauge-val.green{color:#188a5c;}
     .gauge-val.purple{color:#7c3aed;}
     .hours-list{display:flex;flex-direction:column;gap:9px;}
+    .hmonth{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-bottom:5px;border-bottom:2px solid var(--line);}
+    .hmonth:first-child{margin-top:0;}
+    .hmonth-lbl{font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;}
+    .hmonth-tot{font-size:12px;font-weight:800;color:var(--gn);background:#e7f4ed;border-radius:8px;padding:2px 9px;white-space:nowrap;}
     .hour-item{background:#fff;border-radius:14px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh);border:1px solid var(--line);}
     .hour-item .hi-date{font-size:14px;font-weight:800;color:var(--navy);}
     .hour-item .hi-note{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500;}
@@ -2127,7 +2131,8 @@ function renderHours(){
   }
   empty.style.display="none";
 
-  workHours.forEach(function(h,i){
+  // Regroupement par mois, du plus récent au plus ancien
+  function makeItem(h){
     var div=document.createElement("div");
     div.className="hour-item";
     var dateLabel=fmtDate(h.date);
@@ -2139,8 +2144,37 @@ function renderHours(){
       +"<div class='hi-val'>"+fmtH(h.hours)+"</div>"
       +"<button class='hi-del' data-date='"+esc(h.date)+"'>&#128465;</button>"
       +"</div>";
-    list.appendChild(div);
+    return div;
+  }
+
+  var groups={};
+  workHours.forEach(function(h){
+    var k=(h.date||"").slice(0,7);
+    (groups[k]=groups[k]||[]).push(h);
   });
+  Object.keys(groups).sort().reverse().forEach(function(k){
+    var items=groups[k].slice().sort(function(a,b){
+      if(a.date!==b.date) return a.date<b.date?1:-1;         // date décroissante
+      return (b.start||"").localeCompare(a.start||"");       // puis heure de début
+    });
+    var mTotal=items.reduce(function(s,h){return s+h.hours;},0);
+    var head=document.createElement("div");
+    head.className="hmonth";
+    head.innerHTML="<span class='hmonth-lbl'>"+esc(monthLabel(k))+"</span>"
+      +"<span class='hmonth-tot'>"+fmtH(mTotal)+"</span>";
+    list.appendChild(head);
+    items.forEach(function(h){ list.appendChild(makeItem(h)); });
+  });
+}
+
+// "2026-07" -> "Juillet 2026"
+function monthLabel(ym){
+  var p=(ym||"").split("-");
+  if(p.length<2) return ym||"";
+  var d=new Date(parseInt(p[0],10), parseInt(p[1],10)-1, 1);
+  if(isNaN(d)) return ym;
+  var s=d.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+  return s.charAt(0).toUpperCase()+s.slice(1);
 }
 
 document.getElementById("hours-list").addEventListener("click",function(e){
